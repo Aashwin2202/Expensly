@@ -1,0 +1,63 @@
+{
+  "project_info": {
+    "project_number": "279660898598",
+    "project_id": "fintrackai-a509c",
+    "storage_bucket": "fintrackai-a509c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:279660898598:android:7af7b60372a6dc1a06f9e7",
+        "android_client_info": {
+          "package_name": "com.fintrackai"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "279660898598-1l1u1fahaa8frkbmbi21iadrq9obnid4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.fintrackai",
+            "certificate_hash": "1976f247915b03ffe4addafea95abfa329072ede"
+          }
+        },
+        {
+          "client_id": "279660898598-9b56n6ttbf4bfps3pa9h6ousu1auhm13.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.fintrackai",
+            "certificate_hash": "c529e8a4054b900f935bdcd32917c30b9f50481a"
+          }
+        },
+        {
+          "client_id": "279660898598-saa6dshse1ru6vltm0hf79kamkfompj0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.fintrackai",
+            "certificate_hash": "30463e3a1f3c4e0dd327cf543022b3626ec8d82e"
+          }
+        },
+        {
+          "client_id": "279660898598-fpfte8hlnnm6t0kevujqfrqq9dickbta.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBS5TWrZ3epyb1kgeOkcrj58LZ5NmokTP0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "279660898598-fpfte8hlnnm6t0kevujqfrqq9dickbta.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

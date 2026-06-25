@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FinTrackAI — SMS Transaction Extractor Tester</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f0f13;
+      color: #e2e2e8;
+      min-height: 100vh;
+      padding: 32px 16px;
+    }
+
+    h1 { text-align: center; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; color: #fff; }
+    .subtitle { text-align: center; font-size: 0.85rem; color: #6b6b80; margin-bottom: 32px; }
+
+    .container { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+    .card { background: #1a1a24; border: 1px solid #2a2a38; border-radius: 12px; padding: 20px; }
+
+    label { display: block; font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #6b6b80; margin-bottom: 10px; }
+
+    textarea, input[type=text] {
+      width: 100%;
+      background: #0f0f13;
+      border: 1px solid #2a2a38;
+      border-radius: 8px;
+      color: #e2e2e8;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      padding: 12px 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    textarea { height: 130px; resize: vertical; }
+    textarea:focus, input[type=text]:focus { border-color: #5b5bff; }
+
+    input[type=text] { margin-bottom: 14px; }
+
+    .sender-hint { font-size: 0.72rem; color: #3a3a55; margin-top: -10px; margin-bottom: 14px; }
+
+    .btn-row { display: flex; gap: 10px; margin-top: 14px; }
+
+    button { cursor: pointer; border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 600; padding: 10px 22px; transition: opacity 0.15s; }
+    button:active { opacity: 0.75; }
+    #extractBtn { background: #5b5bff; color: #fff; flex: 1; }
+    #clearBtn { background: #2a2a38; color: #9090a8; }
+
+    .samples-label { font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #6b6b80; margin-bottom: 10px; }
+    .samples { display: flex; flex-wrap: wrap; gap: 8px; }
+    .sample-chip { background: #22223a; border: 1px solid #2a2a38; border-radius: 6px; padding: 6px 12px; font-size: 0.78rem; color: #9090c8; cursor: pointer; transition: background 0.15s, color 0.15s; }
+    .sample-chip:hover { background: #2e2e50; color: #c8c8ff; }
+
+    /* Filter result */
+    #filterResult { display: none; }
+
+    .filter-pass { background: #0d1f0d; border: 1px solid #1a3a1a; border-radius: 10px; padding: 14px 16px; }
+    .filter-fail { background: #1f0d0d; border: 1px solid #3a1a1a; border-radius: 10px; padding: 14px 16px; }
+
+    .filter-title { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 8px; }
+    .filter-pass .filter-title { color: #6bff8e; }
+    .filter-fail .filter-title { color: #ff6b6b; }
+
+    .filter-rows { display: flex; flex-direction: column; gap: 4px; }
+    .filter-row { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: #6b6b80; }
+    .filter-row .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .dot-pass { background: #3bcc5e; }
+    .dot-fail { background: #cc3b3b; }
+    .dot-skip { background: #4a4a60; }
+    .filter-row.failed-row { color: #ff8080; }
+
+    /* Extraction result */
+    #results { display: none; }
+
+    .result-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+
+    .badge { display: inline-block; border-radius: 6px; padding: 3px 10px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+    .badge-debit  { background: #3a1a1a; color: #ff6b6b; border: 1px solid #5a2a2a; }
+    .badge-credit { background: #1a3a1a; color: #6bff8e; border: 1px solid #2a5a2a; }
+    .badge-unknown{ background: #2a2a1a; color: #ffd86b; border: 1px solid #4a4a2a; }
+
+    .pattern-tag { font-size: 0.72rem; color: #5b5bff; opacity: 0.7; }
+
+    .fields-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 500px) { .fields-grid { grid-template-columns: 1fr; } }
+
+    .field { background: #0f0f13; border: 1px solid #2a2a38; border-radius: 8px; padding: 12px 14px; }
+    .field-key { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: #5b5b80; margin-bottom: 4px; }
+    .field-value { font-size: 0.95rem; font-weight: 500; color: #e2e2f5; word-break: break-all; }
+    .field-value.null-value { color: #3a3a55; font-style: italic; }
+    .field-value.amount-value { font-size: 1.3rem; font-weight: 700; color: #fff; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div>
+    <h1>FinTrackAI · SMS Tester</h1>
+    <p class="subtitle">Paste a raw bank SMS to preview the SmsFilter verdict and ExtractedTransaction fields</p>
+  </div>
+
+  <div class="card">
+    <label for="senderInput">Sender Address (optional)</label>
+    <input type="text" id="senderInput" placeholder="e.g. VK-HDFCBK  or  AD-SBIBNK" />
+    <p class="sender-hint">Leave blank to skip the allowlist check (isAllowedSender will be assumed true)</p>
+
+    <label for="smsInput">Raw SMS Body</label>
+    <textarea id="smsInput" placeholder="e.g. Rs.1,250.00 debited from A/c XX4321 on 05-Apr-26 to A/c XX9876. Ref no 123456789"></textarea>
+
+    <div class="btn-row">
+      <button id="extractBtn" onclick="runAll()">Run Filter + Extract</button>
+      <button id="clearBtn" onclick="clearAll()">Clear</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="samples-label">Sample Messages</div>
+    <div class="samples" id="sampleChips"></div>
+  </div>
+
+  <!-- SmsFilter verdict -->
+  <div class="card" id="filterResult">
+    <label style="margin-bottom:12px">SmsFilter Verdict</label>
+    <div id="filterBox"></div>
+  </div>
+
+  <!-- ExtractedTransaction fields -->
+  <div class="card" id="results">
+    <div class="result-header">
+      <span style="font-weight:700; color:#fff">ExtractedTransaction</span>
+      <span id="typeBadge" class="badge"></span>
+      <span id="patternTag" class="pattern-tag"></span>
+    </div>
+    <div class="fields-grid" id="fieldsGrid"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// SmsConstants.kt — ported to JS
+// ═══════════════════════════════════════════════════════════════════
+
+const TRANSACTION_KEYWORDS = [
+  "debited","credited","withdrawn","withdrawal","transferred",
+  "purchase","sent","spent","paid","received","deposited",
+];
+
+const FAILED_TRANSACTION_KEYWORDS = [
+  "declined","failed","not successful","unsuccessful","could not be processed",
+  "transaction failed","payment failed","payment declined","insufficient funds",
+  "insufficient balance","transaction unsuccessful","could not complete",
+];
+
+const OTP_KEYWORDS = [
+  "otp","one time password","one-time password","do not share",
+  "never share","valid for","verification code","auth code",
+  "use this code","login code",
+  // Note: "due" is an OTP_KEYWORD in the Kotlin source
+  "due",
+];
+
+const BANK_NAMES = ["HDFC","ICICI","SBI","AXIS","KOTAK","YES","IDFC","PNB","PUNJAB","RBL","DBS","HSBC","CITI"];
+
+// RegexOption.IGNORE_CASE only — no DOTALL — mirrors Kotlin exactly
+const EMI_CONVERSION_PATTERNS = [
+  /converted\s+to\s+\d+\s+months?\s+emi/i,
+  /converted\s+to\s+emi/i,
+  /amort(?:ization)?\s+schedule/i,
+  /emi\s+amt\s+is\s+exclusive/i,
+];
+
+// RegexOption.IGNORE_CASE only; first pattern uses .*? (no DOTALL in Kotlin)
+const CREDIT_CARD_STATEMENT_PATTERNS = [
+  /outstanding\s+of\s+(?:Rs\.?|INR|₹|rs\.?)\s*\d+(?:[.,]\d{3})*(?:\.\d{1,2})?\s+on\s+your\s+credit\s+card.*?due\s+on/i,
+  /Min\.?\s+Amount\s+Due/i,
+  /outstanding.*due\s+on/i,
+  /Please\s+ignore\s+if\s+already\s+paid/i,
+];
+
+const MERCHANT_SUFFIXES = [
+  /\s+group\s+private\s+limited\.?$/i, /\s+group\s+private\s+limit\.?$/i,
+  /\s+group\s+pvt\s+ltd\.?$/i,        /\s+group\s+private\s+ltd\.?$/i,
+  /\s+group\s+pvt\.?$/i,              /\s+group\s+limited\.?$/i,
+  /\s+group\s+ltd\.?$/i,              /\s+pvt\s+ltd\.?$/i,
+  /\s+private\s+limited\.?$/i,        /\s+private\s+limit\.?$/i,
+  /\s+private\s+ltd\.?$/i,            /\s+pvt\s+ltd$/i,
+  /\s+ltd\.?$/i,                      /\s+limited\.?$/i,
+  /\s+inc\.?$/i,                      /\s+incorporated\.?$/i,
+  /\s+corp\.?$/i,                     /\s+corporation\.?$/i,
+  /\s+llc\.?$/i,                      /\s+llp\.?$/i,
+  /\s+limited\s+liability\s+partnership\.?$/i,
+  /\s+group\.?$/i,
+];
+
+const MERCHANT_PATTERNS = [
+  /For:\s+([A-Z][A-Za-z0-9\s&]+?)(?:\s+From|\s+Via|\s+on\s+|\s+at\s+|$)/i,
+  /(?:to|at|from|via)\s+([A-Z][A-Za-z0-9\s&]+?)(?:\s+on\s+|\s+at\s+|$)/i,
+  /(?:merchant|payee|beneficiary)[\s:]+([A-Z][A-Za-z0-9\s&]+)/i,
+];
+
+const MERCHANT_CATEGORIES = {
+  "swiggy":"food","zomato":"food","food panda":"food","uber eats":"food",
+  "domino":"food","pizza hut":"food","kfc":"food","mcdonald":"food",
+  "mc donalds":"food","burger king":"food","subway":"food",
+  "zepto":"groceries","dunzo":"groceries","blinkit":"groceries",
+  "big basket":"groceries","bigbasket":"groceries","grofers":"groceries",
+  "dmart":"groceries","reliance fresh":"groceries","spencer":"groceries",
+  "amazon":"shopping","flipkart":"shopping","myntra":"shopping",
+  "puma":"shopping","nike":"shopping","adidas":"shopping","reebok":"shopping",
+  "nykaa":"shopping","ajio":"shopping","meesho":"shopping","snapdeal":"shopping",
+  "uber":"travel","ola":"travel","rapido":"travel","irctc":"travel",
+  "make my trip":"travel","makemytrip":"travel","goibibo":"travel",
+  "indigo":"travel","air india":"travel","spicejet":"travel",
+  "netflix":"entertainment","hotstar":"entertainment","spotify":"entertainment",
+  "youtube":"entertainment","bookmyshow":"entertainment","pvr":"entertainment",
+  "airtel":"bills","jio":"bills","vodafone":"bills","bsnl":"bills",
+  "lic":"bills","hdfc life":"bills","sbi life":"bills",
+  "pharmeasy":"health","1mg":"health","netmeds":"health","apollo":"health",
+  "salary":"salary",
+  "zerodha":"investment","groww":"investment","upstox":"investment",
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// SmsTransactionalSenderCodes.kt — ported to JS
+// ═══════════════════════════════════════════════════════════════════
+
+const ALLOWED_TRANSACTIONAL_SENDER_TOKENS = new Set([
+  "HDFCBK","HDFCCA","HDFCCRD","HDFCSMS","HDFCUPI",
+  "ICICIB","ICICIO","ICICIC","ICICID","ICICIJ","ICICIT","ICICIK","ICICIP",
+  "SBIBNK","SBIINB","SBICRD","SBIPSG","SBIPAY","SBICARDS","SBIPRE","SBIRGV","SBIMSS",
+  "AXISBK","AXISCARD","AXISBK0","AXISOL",
+  "KOTAKB","KOTAKBK","KOTAKP","KTKBNK",
+  "YESBNK","YESBANK","YESBKG",
+  "IDFCFB","IDFCFBK","IDFCFI","IDFCFY",
+  "IDBIBK","IDBIBNK","IDBIOT",
+  "PNBINB","PNBSMS","PNBANK","ORIENTAL","OBCBNK","UNIONQ","UNIONB","UBIIBK",
+  "BOIIND","BOISMS","BOIBNK","BARODAW","BOBTXN","BOBSMS","BOBCARD","CANBNK","CANARA",
+  "IOBCHN","IOBANK",
+  "INDBNK","INDUSI","FEDBNK","RBLBNK","RBLCRD","RBLBANK",
+  "BANDHN","BDBL","AUBLUK","AUIBNK","AUBANK",
+  "JKBANK","JKBANQ","KTKBNK","KARNAT","TMBL","TMBANK","SIBSMS","SOUIBNK",
+  "KVBLIN","CSBBNK","CUBANK","DCBBNK",
+  "UCOBNK","UCOBAN","CORPBNK","CORPBK","CENTBK","ANDBNK",
+  "DBSBNK","DBSINB","DBSSMS","CITIBK","CITIBR","HSBCIN","HSBCBB","SCBANK","SCBL",
+  "DEUTBK","DBINBK",
+  "AMEXIN","AMEXMR",
+  "IPBMSG","IPPBKL",
+  "ESFBNK","EQUITAS",
+]);
+
+function normalizeOperatorPrefix(address) {
+  return address.toUpperCase().trim().replace(/^[A-Z]{2,3}-/, "");
+}
+
+function compactSenderKey(address) {
+  return normalizeOperatorPrefix(address).replace(/[^A-Z0-9]/g, "");
+}
+
+function isAllowedSender(address) {
+  const key = compactSenderKey(address);
+  if (key.length < 4) return false;
+  for (const token of ALLOWED_TRANSACTIONAL_SENDER_TOKENS) {
+    if (key.includes(token)) return true;
+  }
+  return false;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SmsFilter.kt — ported to JS
+// Returns { passed: bool, checks: [{label, passed, skipped}] }
+// ═══════════════════════════════════════════════════════════════════
+
+function runSmsFilter(body, address) {
+  const bodyLower = body.toLowerCase();
+  const senderProvided = address && address.trim().length > 0;
+
+  const senderOk     = senderProvided ? isAllowedSender(address) : null; // null = skipped
+  const isTransaction= TRANSACTION_KEYWORDS.some(kw => bodyLower.includes(kw));
+  const isOtp        = OTP_KEYWORDS.some(kw => bodyLower.includes(kw));
+  const isEmi        = EMI_CONVERSION_PATTERNS.some(p => p.test(body));
+  const isStatement  = CREDIT_CARD_STATEMENT_PATTERNS.some(p => p.test(body));
+  const isFailed     = FAILED_TRANSACTION_KEYWORDS.some(kw => bodyLower.includes(kw));
+
+  const checks = [
+    { label: "isAllowedSender",     passed: senderOk,        skipped: senderOk === null, require: true  },
+    { label: "isTransaction",       passed: isTransaction,   skipped: false,             require: true  },
+    { label: "!isOtp",              passed: !isOtp,          skipped: false,             require: true  },
+    { label: "!isEmiConversion",    passed: !isEmi,          skipped: false,             require: true  },
+    { label: "!isStatementAlert",   passed: !isStatement,    skipped: false,             require: true  },
+    { label: "!isFailedTransaction",passed: !isFailed,       skipped: false,             require: true  },
+  ];
+
+  // Overall: skipped checks are treated as passing (we can't block on missing sender)
+  const passed = checks.every(c => c.skipped || c.passed);
+  return { passed, checks };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TransactionExtractor.kt helper functions — ported to JS
+// ═══════════════════════════════════════════════════════════════════
+
+function normalizeCurrencyCode(raw) {
+  if (!raw) return "INR";
+  const s = raw.trim().toUpperCase().replace(/\./g, "");
+  if (s === "RS" || s === "INR" || s === "₹") return "INR";
+  const supported = ["USD","EUR","GBP","JPY","AUD","CAD","CHF","SGD","AED"];
+  if (supported.includes(s)) return s;
+  return s.length === 3 ? s : "INR";
+}
+
+function cleanCardNumber(cardNumber) {
+  if (!cardNumber) return null;
+  const digits = cardNumber.replace(/[^0-9]/g, "");
+  return digits || cardNumber;
+}
+
+function cleanAccountName(account) {
+  if (!account) return null;
+  let cleaned = account;
+  cleaned = cleaned.replace(/\b(ending|ending with|spent on|spent using|using|on your|your|towards your|received towards)\b/gi, "");
+  cleaned = cleaned.replace(/\bCredit\s+Card\b/gi, "Card");
+  cleaned = cleaned.replace(/\bCredit\s+(?=\s|$)/gi, "");
+  cleaned = cleaned.replace(/\b[*Xx]+(\d{4,})\b/g, (_, d) => d);
+  cleaned = cleaned.replace(/\s+/g, " ").trim();
+  return cleaned || null;
+}
+
+function cleanMerchantName(merchant) {
+  if (!merchant) return null;
+  let cleaned = merchant.trim();
+  for (const suffix of MERCHANT_SUFFIXES) cleaned = cleaned.replace(suffix, "");
+  cleaned = cleaned.trim();
+  if (cleaned.length > 0) {
+    cleaned = cleaned.toLowerCase().split(/\s+/).map(w => w ? w[0].toUpperCase() + w.slice(1) : w).join(" ");
+  }
+  return cleaned || merchant;
+}
+
+function extractBankName(text, senderAddress) {
+  if (senderAddress) {
+    const su = senderAddress.toUpperCase();
+    for (const bank of BANK_NAMES) { if (su.includes(bank)) return bank; }
+  }
+  const m1 = text.match(/\b([A-Z]{2,})(?:BANK|BANK\s+CARD|CARD|BANK\s+A\/C)\b/i);
+  if (m1) {
+    const bt = m1[1];
+    if (bt.length > 4 && bt.toUpperCase().endsWith("BANK")) return bt.replace(/BANK$/i, "").toUpperCase();
+    return bt.toUpperCase();
+  }
+  const m2 = text.match(/\b([A-Z]{2,})\s+(?:Bank|Credit|Debit)\s+Card/i);
+  if (m2) return m2[1].toUpperCase();
+  for (const bank of BANK_NAMES) { if (new RegExp(`\\b${bank}\\b`, "i").test(text)) return bank; }
+  return null;
+}
+
+function extractDate(smsText) {
+  const monthMatch = smsText.match(/(?<date>\d{1,2}[-/](?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[-/]\d{2,4})/i);
+  if (monthMatch) return monthMatch.groups.date;
+  const m = smsText.match(/(?<date>\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/);
+  return m ? m.groups.date : null;
+}
+
+function extractCardNumber(smsText) {
+  const m = smsText.match(/(?:Card|card)\s+([*Xx0-9]+)/i);
+  return m ? cleanCardNumber(m[1]) : null;
+}
+
+function extractVPA(smsText) {
+  const m = smsText.match(/(?:from|via|VPA|vpa)[\s:]*([\w.+\-]+@[\w.\-]+)|([\w.+\-]+@[\w.\-]+)/i);
+  if (!m) return null;
+  return (m[1] && m[1].length > 0) ? m[1] : (m[2] && m[2].length > 0 ? m[2] : null);
+}
+
+function extractAccount(smsText) {
+  const m = smsText.match(/(?:a\/?c\.?|account|acct)[\s:]*([*Xx0-9]+|\d{4,})/i);
+  return m ? m[1] : null;
+}
+
+function extractReference(smsText) {
+  const m = smsText.match(/Ref(?:erence)?[:\s]+(\d+)/i);
+  return m ? m[1] : null;
+}
+
+function parseAmount(amountStr) {
+  if (!amountStr) return null;
+  const v = parseFloat(amountStr.replace(/,/g, ""));
+  return isNaN(v) ? null : v;
+}
+
+function inferCategory(merchant) {
+  if (!merchant) return null;
+  const ml = merchant.toLowerCase();
+  for (const [key, cat] of Object.entries(MERCHANT_CATEGORIES)) { if (ml.includes(key)) return cat; }
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TransactionExtractor.extractTransactionData — ported to JS
+//
+// Flag notes (mirroring Kotlin exactly):
+//   Kotlin uses RegexOption.IGNORE_CASE only (no DOTALL) for all patterns.
+//   → JS flag is always "i" (never "s").
+//   Patterns that cross lines use [\s\S] explicitly (same in both languages).
+// ═══════════════════════════════════════════════════════════════════
+
+function extractTransactionData(sms) {
+  const empty = { type:null, amount:null, currency:null, date:null, fullAccount:null, merchant:null, reference:null, category:null, _pattern:null };
+  if (!sms || !sms.trim()) return empty;
+
+  const text = sms.replace(/\r/g, "\n").trim();
+
+  // Reject credit card statements early (mirrors Kotlin)
+  if (CREDIT_CARD_STATEMENT_PATTERNS.some(p => p.test(text))) return empty;
+
+  const CURR = String.raw`(?<currency>USD|EUR|GBP|JPY|AUD|CAD|CHF|SGD|AED|Rs\.?|INR|₹|rs\.?)\s*(?<amount>\d+(?:[.,]\d{3})*(?:\.\d{1,2})?)`;
+
+  const reference = extractReference(text);
+
+  // ── Pattern 0 ──────────────────────────────────────────────────
+  // "transaction of <amount> at <merchant> …debited to your…Card ending <4> on <date>"
+  // Kotlin: IGNORE_CASE, .*? (no DOTALL) — JS flag: "i"
+  {
+    const p = new RegExp(
+      String.raw`transaction\s+of\s+` + CURR +
+      String.raw`\s+at\s+(?<merchant>[A-Za-z0-9]+)\s+.*?debited\s+to\s+your\s+.*?(?:Card|CreduCard)\s+ending\s+(?<cardNumber>\d{4})\s+on\s+(?<date>\d{1,2}[/\-]\d{1,2}[/\-]\d{2,4})`,
+      "i"
+    );
+    const m = p.exec(text);
+    if (m?.groups) {
+      const cardNumber = cleanCardNumber(m.groups.cardNumber || "XXXX") || "XXXX";
+      const bankName = extractBankName(text) || "SBI";
+      const accountLabel = `${bankName} Bank Card ${cardNumber}`;
+      const merchant = cleanMerchantName(m.groups.merchant?.trim() || "");
+      return { type:"debit", amount:parseAmount(m.groups.amount), currency:normalizeCurrencyCode(m.groups.currency), date:m.groups.date||extractDate(text), fullAccount:cleanAccountName(accountLabel)||accountLabel, merchant, reference, category:inferCategory(merchant), _pattern:"P0 · transaction of…at…debited" };
+    }
+  }
+
+  // ── Pattern 1 ──────────────────────────────────────────────────
+  // "<amount> debited from a/c <fromAcct> … on <date> … to a/c <toAcct>"
+  // Kotlin: IGNORE_CASE, .*? (no DOTALL) — JS flag: "i"
+  {
+    const p = new RegExp(
+      String.raw`(?:Sms[:\s]*)?(?:[A-Za-z\s]+:)?\s*(?:Rs\.?|INR|₹|rs\.?)\s*(?<amount>\d+(?:[.,]\d{3})*(?:\.\d{1,2})?)\s*debited\s+from\s+(?:a\/?c\.?\s*)?(?<fromAcct>[*Xx0-9A-Za-z\-]+).*?(?:on\s+)?(?<date>\d{1,2}[/\-]\d{1,2}(?:[/\-]\d{2,4})?).*?to\s+(?:a\/?c\.?\s*)?(?<toAcct>[*Xx0-9A-Za-z\-]+)`,
+      "i"
+    );
+    const m = p.exec(text);
+    if (m?.groups) {
+      const merchant = extractVPA(text) || m.groups.toAcct?.trim() || null;
+      return { type:"debit", amount:parseAmount(m.groups.amount), currency:"INR", date:m.groups.date||extractDate(text), fullAccount:m.groups.fromAcct?.trim()||null, merchant, reference, category:inferCategory(merchant), _pattern:"P1 · debited from A/c…to A/c" };
+    }
+  }
+
+  // ── Pattern 2 ──────────────────────────────────────────────────
+  // "Sent Rs <amount> … From <fromAcct> … To <merchant> … On <date>"
+  // Kotlin: IGNORE_CASE, uses [\s\S]*? explicitly — JS flag: "i"
+  {
+    const p = new RegExp(
+      String.raw`Sent\s+(?:Rs\.?|INR|₹|rs\.?)\s*(?<amount>\d+(?:[.,]\d{3})*(?:\.\d{1,2})?)[\s\S]*?From\s+(?<fromAcct>[^\n]+)[\s\S]*?To\s+(?<merchant>[^\n]+)[\s\S]*?(?:On\s+)?(?<date>\d{1,2}[/\-]\d{1,2}[/\-]\d{2,4})`,
+      "i"
+    );
+    const m = p.exec(text);
+    if (m?.groups) {
+      const merchant = m.groups.merchant?.trim() || null;
+      return { type:"debit", amount:parseAmount(m.groups.amount), currency:"INR", date:m.groups.date||extractDate(text), fullAccount:m.groups.fromAcct?.trim()||null, merchant, reference, category:inferCategory(merchant), _pattern:"P2 · Sent…From…To…On" };
+    }
+  }
+
+  // ── Pattern 3 ──────────────────────────────────────────────────
+  // "Credit Alert! / credited / credit … a/c <account> … Rs <amount> … on <date>"
+  // Kotlin: IGNORE_CASE, uses [\s\S]*? explicitly — JS flag: "i"
+  {
+    const p = new RegExp(
+      String.raw`(?:Sms[:\s]*)?.*?(?:Credit\s+Alert!|credited|credit)\s+(?:to\s+)?(?:HDFC\s+Bank\s+)?(?:a\/?c\.?\s*)?(?<account>[*Xx0-9A-Za-z\s\-]+)?.*?(?:Rs\.?|INR|₹|rs\.?)\s*(?<amount>\d+(?:[.,]\d{3})*(?:\.\d{1,2})?)[\s\S]*?(?:on\s+)?(?<date>\d{1,2}[/\-]\d{1,2}[/\-]\d{2,4})`,
+      "i"
+    );
+    const m = p.exec(text);
+    if (m?.groups) {
+      const merchant = extractVPA(text);
+      const fullAccount = m.groups.account?.trim() || extractAccount(text) || null;
+      return { type:"credit", amount:parseAmount(m.groups.amount), currency:"INR", date:m.groups.date||extractDate(text), fullAccount, merchant, reference, category:inferCategory(merchant), _pattern:"P3 · Credit Alert / credited" };
+    }
+  }
+
+  // ── Pattern 3.5 ────────────────────────────────────────────────
+  // "Rs <amount> deposited in … a/c <account> … on <date> … for FT-<vendor>"
+  // Kotlin: IGNORE_CASE, .*? (no DOTALL) — JS flag: "i"
+  {
+    const p = new RegExp(
+      String.raw`(?:Update!?\s*)?(?:Rs\.?|INR|₹|rs\.?)\s*(?<amount>\d+(?:[.,]\d{2,3})*(?:\.\d{1,2})?)\s+deposited\s+in\s+.*?(?:a\/?c\.?\s*)?(?<account>[*Xx0-9]+).*?(?:on\s+)?(?<date>\d{1,2}[-\/]\w{3}[-\/]\d{2,4}|\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4}).*?for\s+FT[-:\s]+(?<vendor>[A-Z0-9]+[A-Z0-9X]*)`,
+      "i"
+    );
+    const m = p.exec(text);
+    if (m?.groups) {
+      let vendor = m.groups.vendor?.trim() || null;
+      if (vendor) {
+        vendor = vendor.replace(/X{10,}$/, "").replace(/X+$/, "");
+        if (vendor.length < 3) vendor = "Salary";
+      }
+      const merchant = vendor || "Salary";
+      return { type:"credit", amount:parseAmount(m.groups.amount), currency:"INR", date:m.groups.date||extractDate(text), fullAccount:m.groups.account?.trim()||extractAccount(text)||null, merchant, reference, category:"salary", _pattern:"P3.5 · deposited…FT-vendor (salary)" };
+    }
+  }
+
+  // ── Pattern 3.6 ────────────────────────────────────────────────
+  // "Rs <amount> deposited in … a/c <account> … on <date> … for <refNum> <merchant>"
+  // Kotlin: IGNORE_CASE, .*? (no DOTALL) — JS flag: "i"
+  {
+    const p = new RegExp(
+      String.raw`(?:Update!?\s*)?(?:Rs\.?|INR|₹|rs\.?)\s*(?<amount>\d+(?:[.,]\d{2,3})*(?:\.\d{1,2})?)\s+deposited\s+in\s+.*?(?:a\/?c\.?\s*)?(?<account>[*Xx0-9]+).*?(?:on\s+)?(?<date>\d{1,2}[-\/]\w{3}[-\/]\d{2,4}|\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4}).*?for\s+(?<referenceNum>\d+)\s+(?<merchant>[A-Z][A-Za-z0-9\s]+?)(?:\s+\d{6,}|\s*\.|$)`,
+      "i"
+    );
+    const m = p.exec(text);
+    if (m?.groups) {
+      let merchant = m.groups.merchant?.trim() || null;
+      if (merchant) {
+        merchant = merchant.replace(/\s+\d{6,}.*$/, "").trim().replace(/\s+[A-Z]{2,4}$/, "").trim();
+        if (merchant.length < 2) merchant = null;
+      }
+      return { type:"credit", amount:parseAmount(m.groups.amount), currency:"INR", date:m.groups.date||extractDate(text), fullAccount:m.groups.account?.trim()||extractAccount(text)||null, merchant, reference:m.groups.referenceNum?.trim()||reference, category:inferCategory(merchant), _pattern:"P3.6 · deposited…for <ref> <merchant>" };
+    }
+  }
+
+  // ── Pattern 3.7 ────────────────────────────────────────────────
+  // "Spent/Withdrawn Rs <amount> From/On <account> Bank Card <number> At <merchant>"
+  // Kotlin: IGNORE_CASE, no cross-line .*? — JS flag: "i"
+  {
+    const p = new RegExp(
+      String.raw`(?:Spent|Withdrawn)\s+(?:Rs\.?|INR|₹|rs\.?)\s*(?<amount>\d+(?:[.,]\d{3})*(?:\.\d{1,2})?)\s+(?:From|On)\s+(?<account>[A-Z][A-Za-z0-9\s&]+?\s+(?:Bank\s+)?Card\s+[*Xx0-9]+)\s+At\s+(?<merchant>[A-Za-z0-9][A-Za-z0-9\s.]*?)(?:\s+On\s+\d|\s+Bal\b|\s+Not\b|\.Not\b|$)`,
+      "i"
+    );
+    const m = p.exec(text);
+    if (m?.groups) {
+      let accountLabel = m.groups.account?.trim() || null;
+      if (accountLabel) {
+        const bm = accountLabel.match(/^([A-Z][A-Za-z0-9\s&]+?)\s+Bank\s+Card\s+([*Xx0-9]+)/i);
+        accountLabel = bm ? `${bm[1]} Bank Card ${cleanCardNumber(bm[2])||bm[2]}` : cleanAccountName(accountLabel);
+      }
+      let merchant = m.groups.merchant?.trim() || null;
+      if (merchant) merchant = cleanMerchantName(merchant);
+      const dateMatch = text.match(/\d{4}[-/]\d{1,2}[-/]\d{1,2}/);
+      return { type:"debit", amount:parseAmount(m.groups.amount), currency:"INR", date:dateMatch?.[0]||extractDate(text), fullAccount:cleanAccountName(accountLabel)||accountLabel, merchant, reference, category:inferCategory(merchant), _pattern:"P3.7 · Spent/Withdrawn…From/On Bank Card…At" };
+    }
+  }
+
+  // ── Pattern 3.74 ───────────────────────────────────────────────
+  // "Rs <amount> spent on your <bank> Credit Card ending <number> at <merchant>"
+  // Kotlin: IGNORE_CASE — JS flag: "i"
+  {
+    const p = new RegExp(
+      String.raw`(?:Rs\.?|INR|₹|rs\.?)\s*(?<amount>\d+(?:[.,]\d{3})*(?:\.\d{1,2})?)\s+spent\s+on\s+your\s+(?<account>[A-Z][A-Za-z0-9\s&]+?\s+Credit\s+Card)\s+ending\s+(?<cardNumber>[\dXx*]+)\s+at\s+(?<merchant>[A-Za-z0-9\s&]+?)(?:\s+on\s+|\s+at\s+|$)`,
+      "i"
+    );
+    const m = p.exec(text);
+    if (m?.groups) {
+      const cardNumber = cleanCardNumber(m.groups.cardNumber?.trim()||"XXXX")||"XXXX";
+      const accountText = m.groups.account?.trim()||"";
+      const bankM = accountText.match(/^([A-Z][A-Za-z0-9]+)/);
+      const bankName = bankM?.[1] || accountText.split(/\s+/)[0] || "";
+      const accountLabel = `${bankName} Card ${cardNumber}`;
+      let merchant = m.groups.merchant?.trim()||null;
+      if (merchant) merchant = cleanMerchantName(merchant);
+      const dateMatch = text.match(/\d{1,2}\/\d{1,2}\/\d{2,4}/);
+      return { type:"debit", amount:parseAmount(m.groups.amount), currency:"INR", date:dateMatch?.[0]||extractDate(text), fullAccount:cleanAccountName(accountLabel)||accountLabel, merchant, reference, category:inferCategory(merchant), _pattern:"P3.74 · spent on your…Credit Card ending" };
+    }
+  }
+
+  // ── Pattern 3.75 ───────────────────────────────────────────────
+  // "<currency> <amount> spent using/on … Card <num> on <date> on/at <merchant>"
+  // Handles foreign currencies (USD, EUR, etc.) and amounts starting with decimal (.00)
+  // Kotlin: IGNORE_CASE — JS flag: "i"
+  {
+    const p = new RegExp(
+      String.raw`(?<currency>USD|EUR|GBP|JPY|AUD|CAD|CHF|SGD|AED|Rs\.?|INR|₹|rs\.?)\s*(?<amount>\d+(?:[.,]\d{2,3})*(?:\.\d{1,2})?|\.\d{1,2})\s+spent\s+(?:using\s+|on\s+)[^.]*?(?:Card|card)\s+(?<cardNumber>[*Xx0-9]+)\s+on\s+(?<date>\d{1,2}[-/](?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[-/]\d{2,4}|\d{1,2}[-/]\d{1,2}[-/]\d{2,4})\s+(?:on|at)\s+(?<merchant>(?:null\*)?[A-Za-z0-9*& \-]+?)(?:\.|,|\s+Avl\b|$)`,
+      "i"
+    );
+    const m = p.exec(text);
+    if (m?.groups) {
+      const cardNumber = cleanCardNumber(m.groups.cardNumber?.trim()||extractCardNumber(text)||"XXXX")||"XXXX";
+      let merchant = m.groups.merchant?.trim()||null;
+
+      const accountMatch   = text.match(/([A-Z][A-Za-z0-9\s&]+?\s+Bank\s+Card\s+[*Xx0-9]+)/i);
+      const accountFallback= text.match(/spent\s+(?:using\s+|on\s+)([A-Z][A-Za-z0-9\s&]+?\s+(?:Bank\s+)?Card\s+[*Xx0-9]+)/i);
+      const accountFlexible= (!accountMatch && !accountFallback) ? text.match(/([A-Z][A-Za-z\s&]+?\s+(?:Bank\s+)?Card\s+[*Xx0-9]+)/i) : null;
+      let accountLabel = accountMatch?.[1]?.trim() || accountFallback?.[1]?.trim() || accountFlexible?.[1]?.trim() || null;
+
+      if (!accountLabel) {
+        const bm = text.match(/([A-Z][A-Za-z]+)\s+Bank/i);
+        const bankName = bm?.[1] || extractBankName(text) || "Card";
+        accountLabel = `${bankName} Bank Card ${cardNumber}`;
+      } else {
+        const bm = accountLabel.match(/^([A-Z][A-Za-z0-9\s&]+?)\s+Bank\s+Card\s+([*Xx0-9]+)/i);
+        accountLabel = bm ? `${bm[1]} Bank Card ${cleanCardNumber(bm[2])||bm[2]}` : (cleanAccountName(accountLabel)||accountLabel);
+      }
+
+      if (merchant) {
+        merchant = merchant.replace(/^null\*/i, "").trim().replace(/[.,]+$/, "").trim();
+        merchant = cleanMerchantName(merchant);
+      }
+      return { type:"debit", amount:parseAmount(m.groups.amount), currency:normalizeCurrencyCode(m.groups.currency), date:m.groups.date||extractDate(text), fullAccount:cleanAccountName(accountLabel)||accountLabel, merchant, reference, category:inferCategory(merchant), _pattern:"P3.75 · spent using/on…Card…on/at merchant" };
+    }
+  }
+
+  // ── Pattern 4 ──────────────────────────────────────────────────
+  // "Rs <amount> paid to / spent at / debited for <merchant>"
+  // Kotlin: IGNORE_CASE — JS flag: "i"
+  {
+    const p = new RegExp(
+      String.raw`(?:Rs\.?|INR|₹|rs\.?)\s*(?<amount>\d+(?:[.,]\d{3})*(?:\.\d{1,2})?)\s+(?:paid\s+to|spent\s+at|debited\s+for)\s+(?<merchant>[^\n,]+?)(?:\s+on\s+|\s+at\s+)?(?<date>\d{1,2}[/\-]\d{1,2}[/\-]\d{2,4})?`,
+      "i"
+    );
+    const m = p.exec(text);
+    if (m?.groups) {
+      const merchant = m.groups.merchant?.trim()||null;
+      return { type:"debit", amount:parseAmount(m.groups.amount), currency:"INR", date:m.groups.date||extractDate(text), fullAccount:extractAccount(text), merchant, reference, category:inferCategory(merchant), _pattern:"P4 · paid to / spent at / debited for" };
+    }
+  }
+
+  // ── Pattern 4.5 ────────────────────────────────────────────────
+  // "Rs <amount> credited to your card / RECEIVED TOWARDS YOUR CREDIT CARD … ending <num>"
+  // Kotlin: IGNORE_CASE, .*? (no DOTALL) — JS flag: "i"
+  {
+    const p = new RegExp(
+      String.raw`(?:Payment\s+of\s+|PAYMENT\s+OF\s+)?(?:Rs\.?|INR|₹|rs\.?)\s*(?<amount>\d+(?:[.,]\d{3})*(?:\.\d{1,2})?)\s+(?:was\s+)?(?:credited\s+to\s+(?:your\s+)?(?:card|credit\s+card)|RECEIVED\s+TOWARDS\s+YOUR\s+CREDIT\s+CARD).*?(?:ending|no\.?|number|ENDING\s+WITH)\s*(?<cardNumber>[\dXx*]+)`,
+      "i"
+    );
+    const m = p.exec(text);
+    if (m?.groups) {
+      const cardNumber = cleanCardNumber(m.groups.cardNumber?.trim()||"XXXX")||"XXXX";
+      let bankName = "Card";
+      const bm1 = text.match(/([A-Z]{2,})(?:BANK|BANK\s+CARD|CARD|CARDMEMBER)/i);
+      if (bm1) {
+        const bt = bm1[1];
+        bankName = (bt.length > 4 && bt.toUpperCase().endsWith("BANK")) ? bt.replace(/BANK$/i,"").toUpperCase() : bt.toUpperCase();
+      } else {
+        const cm = text.match(/DEAR\s+([A-Z]{2,})(?:BANK)?\s+CARDMEMBER/i);
+        if (cm) bankName = cm[1].toUpperCase();
+        else { const cbm = text.match(/\b(HDFC|SBI|ICICI|AXIS|KOTAK|PNB|PUNJAB|YES|RBL)\b/i); if (cbm) bankName = cbm[1].toUpperCase(); }
+      }
+      const accountLabel = `${bankName} Bank Card ${cardNumber}`;
+      const merchant = `Credit Card Payment (ending ${cardNumber})`;
+      return { type:"credit", amount:parseAmount(m.groups.amount), currency:"INR", date:extractDate(text), fullAccount:cleanAccountName(accountLabel)||accountLabel, merchant, reference, category:"bills", _pattern:"P4.5 · credited to your card" };
+    }
+  }
+
+  // ── Pattern 5 ──────────────────────────────────────────────────
+  // "Rs <amount> credited/received/deposited to account/a/c <account> … on <date>"
+  // Kotlin: IGNORE_CASE, uses [\s\S]*? explicitly — JS flag: "i"
+  {
+    const p = new RegExp(
+      String.raw`(?:Rs\.?|INR|₹|rs\.?)\s*(?<amount>\d+(?:[.,]\d{3})*(?:\.\d{1,2})?)\s+(?:credited|received|deposited)\s+(?:to\s+)?(?:account|a\/?c\.?)?\s*(?<account>[*Xx0-9A-Za-z\-]+)?.*?(?:on\s+)?(?<date>\d{1,2}[/\-]\d{1,2}[/\-]\d{2,4})`,
+      "i"
+    );
+    const m = p.exec(text);
+    if (m?.groups) {
+      const vpa = extractVPA(text);
+      const cardM = text.match(/(?:CREDIT\s+CARD|credit\s+card).*?(?:ending|no\.?|number|ENDING\s+WITH)\s*([\dXx*]+)/i);
+      if (cardM) {
+        const cn = cleanCardNumber(cardM[1].trim())||"XXXX";
+        return { type:"credit", amount:parseAmount(m.groups.amount), currency:"INR", date:m.groups.date||extractDate(text), fullAccount:m.groups.account?.trim()||extractAccount(text)||null, merchant:`Credit Card Payment (ending ${cn})`, reference, category:"bills", _pattern:"P5 · credited/received (credit card)" };
+      }
+      return { type:"credit", amount:parseAmount(m.groups.amount), currency:"INR", date:m.groups.date||extractDate(text), fullAccount:m.groups.account?.trim()||extractAccount(text)||null, merchant:vpa, reference, category:inferCategory(vpa), _pattern:"P5 · credited/received/deposited" };
+    }
+  }
+
+  // ── Pattern 6 ──────────────────────────────────────────────────
+  // "UPI payment of Rs <amount> to/for <merchant> on <date>"
+  // Kotlin: IGNORE_CASE — JS flag: "i"
+  {
+    const p = new RegExp(
+      String.raw`(?:UPI|upi)\s+(?:payment|transaction)\s+(?:of\s+)?(?:Rs\.?|INR|₹|rs\.?)\s*(?<amount>\d+(?:[.,]\d{3})*(?:\.\d{1,2})?)\s+(?:to|for)\s+(?<merchant>[^\n,]+?)(?:\s+on\s+)?(?<date>\d{1,2}[/\-]\d{1,2}[/\-]\d{2,4})?`,
+      "i"
+    );
+    const m = p.exec(text);
+    if (m?.groups) {
+      const vpa = extractVPA(text);
+      const merchant = vpa || m.groups.merchant?.trim() || null;
+      return { type:"debit", amount:parseAmount(m.groups.amount), currency:"INR", date:m.groups.date||extractDate(text), fullAccount:extractAccount(text), merchant, reference, category:inferCategory(merchant), _pattern:"P6 · UPI payment" };
+    }
+  }
+
+  // ── Pattern 6.5 ────────────────────────────────────────────────
+  // "Paid Rs <amount> For: <merchant>"
+  // Kotlin: IGNORE_CASE — JS flag: "i"
+  {
+    const p = new RegExp(
+      String.raw`(?:Alert!?\s*)?Paid\s+(?:Rs\.?|INR|₹|rs\.?)\s*(?<amount>\d+(?:[.,]\d{3})*(?:\.\d{1,2})?)\s+For:\s*(?<merchant>[^\n,]+?)(?:\s+From|\s+Via|\s+on\s+|\s+at\s+|$)`,
+      "i"
+    );
+    const m = p.exec(text);
+    if (m?.groups) {
+      let merchant = m.groups.merchant?.trim()||null;
+      if (merchant && /credit\s+card/i.test(merchant)) {
+        const cm = text.match(/(?:ending|no\.?|number|ENDING\s+WITH)\s*([\dXx*]+)/i);
+        merchant = cm ? `Credit Card Payment (ending ${cm[1].trim()})` : "Credit Card Payment";
+      }
+      return { type:"debit", amount:parseAmount(m.groups.amount), currency:"INR", date:extractDate(text), fullAccount:extractAccount(text), merchant, reference, category:inferCategory(merchant), _pattern:"P6.5 · Paid…For:" };
+    }
+  }
+
+  // ── Pattern 6.6 ────────────────────────────────────────────────
+  // "Money Sent-<INR/Rs> <amount> From … A/c <fromAcct> on <date> To A/c <toAcct>"
+  // Kotlin: IGNORE_CASE — JS flag: "i"
+  {
+    const p = new RegExp(
+      String.raw`Money\s+Sent[-\s]+(?:Rs\.?|INR|₹|rs\.?)\s*(?<amount>\d+(?:[.,]\d{3})*(?:\.\d{1,2})?)\s+From\s+.*?(?:A\/?c\.?\s*)?(?<fromAcct>[*Xx0-9]+)\s+on\s+(?<date>\d{1,2}[/\-]\d{1,2}(?:[/\-]\d{2,4})?)\s+To\s+(?:A\/?c\.?\s*)?(?<toAcct>[*Xx0-9]+)`,
+      "i"
+    );
+    const m = p.exec(text);
+    if (m?.groups) {
+      const toAcct = m.groups.toAcct?.trim()||null;
+      const last4 = toAcct?.replace(/[^0-9]/g,"").slice(-4);
+      const merchant = extractVPA(text) || (last4 ? `A/c **${last4}` : "Bank Transfer");
+      return { type:"debit", amount:parseAmount(m.groups.amount), currency:"INR", date:m.groups.date||extractDate(text), fullAccount:m.groups.fromAcct?.trim()||null, merchant, reference, category:"transfer", _pattern:"P6.6 · Money Sent" };
+    }
+  }
+
+  // ── Pattern 6.7 ────────────────────────────────────────────────
+  // "Money received-<INR/Rs> <amount> in your … A/c <account> on <date> by … <byAcct>"
+  // Kotlin: IGNORE_CASE, .*? (no DOTALL) — JS flag: "i"
+  {
+    const p = new RegExp(
+      String.raw`Money\s+received[-\s]+(?:Rs\.?|INR|₹|rs\.?)\s*(?<amount>\d+(?:[.,]\d{3})*(?:\.\d{1,2})?)\s+in\s+your\s+.*?(?:A\/?c\.?\s*)?(?<account>[*Xx0-9]+)\s+on\s+(?<date>\d{1,2}[/\-]\d{1,2}(?:[/\-]\d{2,4})?).*?by\s+.*?(?<byAcct>[*Xx]+\d{4,})`,
+      "i"
+    );
+    const m = p.exec(text);
+    if (m?.groups) {
+      const byAcct = m.groups.byAcct?.trim()||null;
+      const last4 = byAcct?.replace(/[^0-9]/g,"").slice(-4);
+      const merchant = extractVPA(text) || (last4 ? `A/c **${last4}` : "Bank Transfer");
+      return { type:"credit", amount:parseAmount(m.groups.amount), currency:"INR", date:m.groups.date||extractDate(text), fullAccount:m.groups.account?.trim()||null, merchant, reference, category:"transfer", _pattern:"P6.7 · Money received" };
+    }
+  }
+
+  // ── Pattern 7: Generic fallback ───────────────────────────────
+  // Kotlin: IGNORE_CASE — JS flag: "i"
+  {
+    const amountPattern = new RegExp(CURR, "i");
+    const m = amountPattern.exec(text);
+    if (m?.groups) {
+      const amount   = parseAmount(m.groups.amount);
+      const currency = normalizeCurrencyCode(m.groups.currency);
+      const date     = extractDate(text);
+      const account  = extractAccount(text);
+      const vpa      = extractVPA(text);
+
+      let type = null;
+      if (/\bcredited\s+to\s+(?:your\s+)?(?:card|credit\s+card)\b/i.test(text) ||
+          /\bRECEIVED\s+TOWARDS\s+YOUR\s+CREDIT\s+CARD\b/i.test(text)) {
+        type = "credit";
+      } else if (/\b(debited|spent|paid|withdrawn|deducted)\b/i.test(text)) {
+        type = "debit";
+      } else if (/\b(credited|received|deposited|added)\b/i.test(text)) {
+        type = "credit";
+      }
+
+      let merchant = vpa;
+      if (!merchant) {
+        for (const pat of MERCHANT_PATTERNS) {
+          const mm = pat.exec(text);
+          const captured = mm?.[1];
+          if (captured && captured.length > 2 && captured.length < 50) { merchant = captured.trim(); break; }
+        }
+      }
+      if (merchant && /credit\s+card/i.test(merchant)) {
+        const cm = text.match(/(?:ending|no\.?|number|ENDING\s+WITH|ending\s+with)\s*([\dXx*]+)/i);
+        merchant = `Credit Card Payment (ending ${cm?.[1]?.trim()||"XXXX"})`;
+      }
+      return { type, amount, currency, date, fullAccount:account, merchant, reference, category:inferCategory(merchant), _pattern:"P7 · generic fallback" };
+    }
+  }
+
+  return { ...empty, reference };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Sample messages
+// ═══════════════════════════════════════════════════════════════════
+
+const SAMPLES = [
+  { label:"Debit A/c",      sender:"VK-HDFCBK", text:"Rs.1,250.00 debited from A/c XX4321 on 05/04/26 to A/c XX9876. Ref no 123456789. Available balance Rs.48,520.00" },
+  { label:"UPI Debit",      sender:"AD-SBIBNK",  text:"UPI payment of Rs 599 to Swiggy on 03/04/2026. UPI Ref: 411234567890" },
+  { label:"CC Spend",       sender:"VK-HDFCBK",  text:"Rs 2499 spent using HDFC Bank Card 4567 on 01-Apr-26 at Myntra. Available limit Rs 97501." },
+  { label:"Salary",         sender:"AD-SBIBNK",  text:"Update! Rs.55,000 deposited in your SBI A/c XX1234 on 01-Apr-26 for FT-ACMECORP" },
+  { label:"CC Payment",     sender:"VK-HDFCBK",  text:"Payment of Rs.5000 was credited to your Credit Card ending 1234. HDFC CARDMEMBER." },
+  { label:"Money Sent",     sender:"AD-ICICIB",  text:"Money Sent-INR 3000 From your ICICI A/c XX5678 on 04/04/26 To A/c XX8765" },
+  { label:"Money Received", sender:"AD-ICICIB",  text:"Money received-Rs 8000 in your A/c XX1111 on 02/04/26 by ***XX2222" },
+  { label:"ATM Withdrawn",  sender:"AD-AXISBK",  text:"Withdrawn Rs 500 From AXIS Bank Card XX7890 At SBI ATM On 2026-04-03" },
+  { label:"OTP (filtered)", sender:"VK-HDFCBK",  text:"Your OTP for transaction is 839271. Valid for 10 mins. Do not share." },
+  { label:"Unknown sender", sender:"",            text:"Rs.500 debited from A/c XX1234 on 05/04/26." },
+];
+
+// ═══════════════════════════════════════════════════════════════════
+// UI
+// ═══════════════════════════════════════════════════════════════════
+
+function buildSamples() {
+  const container = document.getElementById("sampleChips");
+  for (const s of SAMPLES) {
+    const chip = document.createElement("div");
+    chip.className = "sample-chip";
+    chip.textContent = s.label;
+    chip.onclick = () => {
+      document.getElementById("senderInput").value = s.sender;
+      document.getElementById("smsInput").value = s.text;
+      runAll();
+    };
+    container.appendChild(chip);
+  }
+}
+
+function clearAll() {
+  document.getElementById("senderInput").value = "";
+  document.getElementById("smsInput").value = "";
+  document.getElementById("filterResult").style.display = "none";
+  document.getElementById("results").style.display = "none";
+}
+
+function runAll() {
+  const body   = document.getElementById("smsInput").value;
+  const sender = document.getElementById("senderInput").value;
+
+  if (!body.trim()) { clearAll(); return; }
+
+  renderFilter(runSmsFilter(body, sender), sender);
+  renderExtraction(extractTransactionData(body));
+}
+
+function renderFilter(result, sender) {
+  const el = document.getElementById("filterResult");
+  el.style.display = "block";
+
+  const box = document.getElementById("filterBox");
+  const cls = result.passed ? "filter-pass" : "filter-fail";
+  const title = result.passed ? "PASSED — will be processed" : "BLOCKED — message filtered out";
+
+  const rows = result.checks.map(c => {
+    const dotCls = c.skipped ? "dot-skip" : (c.passed ? "dot-pass" : "dot-fail");
+    const rowCls = (!c.skipped && !c.passed) ? "filter-row failed-row" : "filter-row";
+    let detail = "";
+    if (c.skipped) detail = " (no sender provided — skipped)";
+    else if (!c.passed && c.label === "isAllowedSender") detail = ` — "${compactSenderKey(sender)}" not in allowlist`;
+    else if (!c.passed && c.label === "isTransaction")   detail = " — no transaction keyword found";
+    else if (!c.passed && c.label === "!isOtp")          detail = " — OTP keyword detected";
+    else if (!c.passed && c.label === "!isEmiConversion")detail = " — EMI conversion pattern matched";
+    else if (!c.passed && c.label === "!isStatementAlert")detail = " — credit card statement pattern matched";
+    else if (!c.passed && c.label === "!isFailedTransaction")detail = " — failed transaction keyword detected";
+    return `<div class="${rowCls}"><span class="dot ${dotCls}"></span>${c.label}${detail}</div>`;
+  }).join("");
+
+  box.innerHTML = `<div class="${cls}"><div class="filter-title">${title}</div><div class="filter-rows">${rows}</div></div>`;
+}
+
+function renderExtraction(result) {
+  const resultsEl = document.getElementById("results");
+  resultsEl.style.display = "block";
+
+  const badge = document.getElementById("typeBadge");
+  badge.textContent = result.type || "unknown";
+  badge.className = "badge " + (result.type === "debit" ? "badge-debit" : result.type === "credit" ? "badge-credit" : "badge-unknown");
+
+  document.getElementById("patternTag").textContent = result._pattern ? `→ ${result._pattern}` : "";
+
+  const fields = [
+    { key:"type",        value:result.type },
+    { key:"amount",      value:result.amount != null ? result.amount.toLocaleString("en-IN", {minimumFractionDigits:2, maximumFractionDigits:2}) : null, cls:"amount-value" },
+    { key:"currency",    value:result.currency },
+    { key:"date",        value:result.date },
+    { key:"fullAccount", value:result.fullAccount },
+    { key:"merchant",    value:result.merchant },
+    { key:"reference",   value:result.reference },
+    { key:"category",    value:result.category },
+  ];
+
+  const grid = document.getElementById("fieldsGrid");
+  grid.innerHTML = "";
+  for (const f of fields) {
+    const div = document.createElement("div");
+    div.className = "field";
+    div.innerHTML = `<div class="field-key">${f.key}</div><div class="field-value ${f.cls||""} ${f.value==null?"null-value":""}">${f.value!=null?String(f.value):"null"}</div>`;
+    grid.appendChild(div);
+  }
+}
+
+buildSamples();
+</script>
+</body>
+</html>

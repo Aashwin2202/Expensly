@@ -1,0 +1,326 @@
+[
+  {
+    "match_rate": 0.75,
+    "pattern": {
+      "regex": "(?<bankName>[A-Za-z]{2,20}(?:\\s+[A-Za-z]{2,10})?)\\s+bank\\s+cardmember,\\s+online\\s+payment\\s+of\\s+rs\\.(?<amount>[\\d,]+(?:\\.\\d{1,2})?)\\s+vide\\s+(?:ref#\\s+)?(?<reference>[A-Za-z0-9]{6,30})[\\s\\S]*?was\\s+credited\\s+to\\s+your\\s+card\\s+ending\\s+(?<cardNumber>[Xx*\\d]{4,20})\\s+on\\s+\\d+\\/[A-Za-z]+\\/\\d+_value\\s+date\\s+(?<date>\\d{1,2}[/\\-]\\d{1,2}[/\\-]\\d{2,4}|\\d{4}[/\\-]\\d{2}[/\\-]\\d{2}|\\d{1,2}[/\\-](?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[/\\-]\\d{2,4})",
+      "regex_options": [
+        "IGNORE_CASE"
+      ],
+      "transaction_type": "credit",
+      "priority": 2.0,
+      "group_amount": "amount",
+      "group_balance": null,
+      "group_credit_limit": null,
+      "group_currency": null,
+      "group_date": "date",
+      "group_account": null,
+      "group_merchant": null,
+      "group_reference": "reference",
+      "group_card_number": "cardNumber",
+      "group_bank_name": "bankName",
+      "account_label_type": "Credit Card",
+      "default_currency": "INR",
+      "clean_merchant": false,
+      "merchant": "Card Payment",
+      "sample_sms": "<BANK> bank cardmember, online payment of rs.<AMOUNT> vide <REF>snwr<NUM>m was credited to your card ending <CARDNUM> on <NUM>/apr/<NUM>_value date <DATE>",
+      "sender_id": "AD-HDFCBK-S",
+      "version": 1
+    },
+    "cluster_key": "<BANK> bank cardmember, online payment of rs.<AMOUNT> vide <REF>snwr<NUM>m was credited to your card ending <CARDNUM> on <NUM>/apr/<NUM>_value date <DATE>",
+    "sample_variants": [
+      "<BANK> bank cardmember, online payment of rs.<AMOUNT> vide <REF>snwr<NUM>m was credited to your card ending <CARDNUM> on <NUM>/apr/<NUM>_value date <DATE>",
+      "<BANK> bank cardmember, online payment of rs.<AMOUNT> vide ref# mwh<NUM>pyep<NUM>l was credited to your card ending <CARDNUM> on <NUM>/jul/<NUM>_value date <DATE>",
+      "<BANK> bank cardmember, online payment of rs.<AMOUNT> vide <REF>bjfdww was credited to your card ending <CARDNUM> on <NUM>/jun/<NUM>_value date <DATE>"
+    ]
+  },
+  {
+    "match_rate": 0.0,
+    "pattern": {
+      "regex": "inr (?<amount>[\\d,]+(?:\\.\\d{1,2})?) is credited to your account xxxxxx(?<account>\\d+) on (?<date>\\d{1,2}[\\/\\-]\\d{1,2}[\\/\\-]\\d{2,4}|\\d{4}[\\/\\-]\\d{2}[\\/\\-]\\d{2}|\\d{1,2}[\\/\\-](?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\\/\\-]\\d{2,4}) towards nach-ecs-(?<merchant>[A-Za-z0-9 &.'\\-]{2,60}) (?<bankName>[A-Za-z]{2,20}(?:\\s+[A-Za-z]{2,10})?) bank",
+      "regex_options": [
+        "IGNORE_CASE"
+      ],
+      "transaction_type": "credit",
+      "priority": 2.0,
+      "group_amount": "amount",
+      "group_balance": null,
+      "group_credit_limit": null,
+      "group_currency": null,
+      "group_date": "date",
+      "group_account": "account",
+      "group_merchant": "merchant",
+      "group_reference": null,
+      "group_card_number": null,
+      "group_bank_name": "bankName",
+      "account_label_type": "Acct",
+      "default_currency": "INR",
+      "clean_merchant": true,
+      "merchant": null,
+      "sample_sms": "inr <AMOUNT> is credited to your account xxxxxx<ACCTNUM> on <DATE> towards nach-ecs-ircon international <BANK> bank",
+      "sender_id": "VK-KOTAKB-S",
+      "version": 1
+    },
+    "cluster_key": "inr <AMOUNT> is credited to your account xxxxxx<ACCTNUM> on <DATE> towards nach-ecs-ircon international <BANK> bank",
+    "sample_variants": [
+      "inr <AMOUNT> is credited to your account xxxxxx<ACCTNUM> on <DATE> towards nach-ecs-ircon international <BANK> bank"
+    ]
+  },
+  {
+    "match_rate": 0.0,
+    "pattern": {
+      "regex": "dear user,\\s*rs\\.\\s*(?<amount>[\\d,]+(?:\\.\\d{1,2})?) credited to a\\/c xx(?<account>\\d+) on [\\d.]+ [\\d.]+ (?:am|pm) from (?<merchant>[A-Za-z0-9 &.'\\-]{2,60})\\. ref\\. no-kmb\\d+-\\d+\\. bal:\\s*rs\\.(?<balance>[\\d,]+(?:\\.\\d{1,2})?)\\. - (?<bankName>[A-Za-z]{2,20}(?:\\s+[A-Za-z]{2,10})?) bank",
+      "regex_options": [
+        "IGNORE_CASE"
+      ],
+      "transaction_type": "credit",
+      "priority": 2.0,
+      "group_amount": "amount",
+      "group_balance": "balance",
+      "group_credit_limit": null,
+      "group_currency": null,
+      "group_date": null,
+      "group_account": "account",
+      "group_merchant": "merchant",
+      "group_reference": null,
+      "group_card_number": null,
+      "group_bank_name": "bankName",
+      "account_label_type": "Acct",
+      "default_currency": "INR",
+      "clean_merchant": true,
+      "merchant": null,
+      "sample_sms": "dear user, rs. <AMOUNT> credited to a/c xx<ACCTNUM> on <NUM>.<NUM>.<NUM> <NUM>.<NUM> pm from quantum leap media. ref. no-kmb<NUM>-<NUM>. bal: rs.<AMOUNT>. - <BANK> bank",
+      "sender_id": "AD-KOTAKB-S",
+      "version": 1
+    },
+    "cluster_key": "dear user, rs. <AMOUNT> credited to a/c xx<ACCTNUM> on <NUM>.<NUM>.<NUM> <NUM>.<NUM> pm from quantum leap media. ref. no-kmb<NUM>-<NUM>. bal: rs.<AMOUNT>. - <BANK> bank",
+    "sample_variants": [
+      "dear user, rs. <AMOUNT> credited to a/c xx<ACCTNUM> on <NUM>.<NUM>.<NUM> <NUM>.<NUM> pm from quantum leap media. ref. no-kmb<NUM>-<NUM>. bal: rs.<AMOUNT>. - <BANK> bank",
+      "dear user, rs. <AMOUNT> credited to a/c xx<ACCTNUM> on <NUM>.<NUM>.<NUM> <NUM>.<NUM> am from quantum leap media. ref. no-kmb<NUM>-<NUM>. bal: rs.<AMOUNT>. - <BANK> bank"
+    ]
+  },
+  {
+    "match_rate": 0.0,
+    "pattern": {
+      "regex": "your a\\/c no\\. xxxxxxxxxx(?<account>\\d+) is debited for rs\\.(?<amount>[\\d,]+(?:\\.\\d{1,2})?) on (?<date>\\d{1,2}[\\/\\-]\\d{1,2}[\\/\\-]\\d{2,4}|\\d{4}[\\/\\-]\\d{2}[\\/\\-]\\d{2}|\\d{1,2}[\\/\\-](?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\\/\\-]\\d{2,4}) and a\\/c xxxxxxx(?<beneficiaryAccount>\\d+) credited \\(imps ref no\\. (?<reference>\\d+)\\) -(?<bankName>[A-Za-z]{2,20}(?:\\s+[A-Za-z]{2,10})?) bank",
+      "regex_options": [
+        "IGNORE_CASE"
+      ],
+      "transaction_type": "debit",
+      "priority": 2.0,
+      "group_amount": "amount",
+      "group_balance": null,
+      "group_credit_limit": null,
+      "group_currency": null,
+      "group_date": "date",
+      "group_account": "account",
+      "group_merchant": null,
+      "group_reference": "reference",
+      "group_card_number": null,
+      "group_bank_name": "bankName",
+      "account_label_type": "Acct",
+      "default_currency": "INR",
+      "clean_merchant": false,
+      "merchant": "IMPS Transfer ({beneficiaryAccount})",
+      "sample_sms": "your a/c no. xxxxxxxxxx<ACCTNUM> is debited for rs.<AMOUNT> on <DATE> and a/c xxxxxxx<ACCTNUM> credited (imps ref no. <NUM>) -<BANK> bank",
+      "sender_id": "VM-FEDBNK",
+      "version": 1
+    },
+    "cluster_key": "your a/c no. xxxxxxxxxx<ACCTNUM> is debited for rs.<AMOUNT> on <DATE> and a/c xxxxxxx<ACCTNUM> credited (imps ref no. <NUM>) -<BANK> bank",
+    "sample_variants": [
+      "your a/c no. xxxxxxxxxx<ACCTNUM> is debited for rs.<AMOUNT> on <DATE> and a/c xxxxxxx<ACCTNUM> credited (imps ref no. <NUM>) -<BANK> bank"
+    ]
+  },
+  {
+    "match_rate": 0.0,
+    "pattern": {
+      "regex": "received rs\\.\\s*(?<amount>[\\d,]+(?:\\.\\d{1,2})?) on (?<date>\\d{1,2}[\\/\\-]\\d{1,2}[\\/\\-]\\d{2,4}|\\d{4}[\\/\\-]\\d{2}[\\/\\-]\\d{2}|\\d{1,2}[\\/\\-](?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\\/\\-]\\d{2,4}) in your (?<bankName>[A-Za-z]{2,20}(?:\\s+[A-Za-z]{2,10})?) bank a\\/c x(?<account>[\\d]+) by an a\\/c linked to mobile x\\d+\\.\\s*imps ref no (?<reference>\\d+)",
+      "regex_options": [
+        "IGNORE_CASE"
+      ],
+      "transaction_type": "credit",
+      "priority": 2.0,
+      "group_amount": "amount",
+      "group_balance": null,
+      "group_credit_limit": null,
+      "group_currency": null,
+      "group_date": "date",
+      "group_account": "account",
+      "group_merchant": null,
+      "group_reference": "reference",
+      "group_card_number": null,
+      "group_bank_name": "bankName",
+      "account_label_type": "Acct",
+      "default_currency": "INR",
+      "clean_merchant": false,
+      "merchant": "IMPS Transfer",
+      "sample_sms": "received rs. <AMOUNT> on <DATE> in your <BANK> bank a/c x<ACCTNUM> by an a/c linked to mobile x<NUM>. imps ref no <NUM>.",
+      "sender_id": "AX-KOTAKB-S",
+      "version": 1
+    },
+    "cluster_key": "received rs. <AMOUNT> on <DATE> in your <BANK> bank a/c x<ACCTNUM> by an a/c linked to mobile x<NUM>. imps ref no <NUM>.",
+    "sample_variants": [
+      "received rs. <AMOUNT> on <DATE> in your <BANK> bank a/c x<ACCTNUM> by an a/c linked to mobile x<NUM>. imps ref no <NUM>."
+    ]
+  },
+  {
+    "match_rate": 0.0,
+    "pattern": {
+      "regex": "dear customer,\\s*(?:rs\\.)?(?<amount>[\\d,]+(?:\\.\\d{1,2})?) credited(?:[\\s\\S]*?)to your a\\/c xx(?<account>\\d+) on \\d+[a-z]{3}\\d+ \\d{1,2}:\\d{2}(?::\\d{2})?(?:\\s*[AP]M)?\\.?bal-rs\\.(?<balance>[\\d,]+(?:\\.\\d{1,2})?)\\.[\\s\\S]*?-(?<bankName>[A-Za-z]{2,20}(?:\\s+[A-Za-z]{2,10})?) bank",
+      "regex_options": [
+        "IGNORE_CASE"
+      ],
+      "transaction_type": "credit",
+      "priority": 3.0,
+      "group_amount": "amount",
+      "group_balance": "balance",
+      "group_credit_limit": null,
+      "group_currency": null,
+      "group_date": null,
+      "group_account": "account",
+      "group_merchant": null,
+      "group_reference": null,
+      "group_card_number": null,
+      "group_bank_name": "bankName",
+      "account_label_type": "Acct",
+      "default_currency": "INR",
+      "clean_merchant": false,
+      "merchant": "Interest Payout",
+      "sample_sms": "dear customer, rs.<AMOUNT> credited as interest to your a/c xx<ACCTNUM> on <NUM>mar<NUM> <TIME>.bal-rs.<AMOUNT>.use fedmobile app to view your a/c statement-<BANK> bank",
+      "sender_id": "VM-FEDBNK",
+      "version": 1
+    },
+    "cluster_key": "dear customer, rs.<AMOUNT> credited as interest to your a/c xx<ACCTNUM> on <NUM>mar<NUM> <TIME>.bal-rs.<AMOUNT>.use fedmobile app to view your a/c statement-<BANK> bank",
+    "sample_variants": [
+      "dear customer, rs.<AMOUNT> credited as interest to your a/c xx<ACCTNUM> on <NUM>mar<NUM> <TIME>.bal-rs.<AMOUNT>.use fedmobile app to view your a/c statement-<BANK> bank",
+      "dear customer, <NUM> credited to your a/c xx<ACCTNUM> on <NUM>jan<NUM> <TIME>.bal-rs.<AMOUNT>.use fedmobile app to view your a/c statement-<BANK> bank"
+    ]
+  },
+  {
+    "match_rate": 0.0,
+    "pattern": {
+      "regex": "rs (?<amount>[\\d,]+(?:\\.\\d{1,2})?) credited to your a\\/c xx(?<account>\\d+) via imps on \\d+[a-z]{3}\\d+ \\d{1,2}:\\d{2}(?::\\d{2})?(?:\\s*[AP]M)? imps ref no (?<reference>\\d+) bal:rs (?<balance>[\\d,]+(?:\\.\\d{1,2})?) -(?<bankName>[A-Za-z]{2,20}(?:\\s+[A-Za-z]{2,10})?) bank",
+      "regex_options": [
+        "IGNORE_CASE"
+      ],
+      "transaction_type": "credit",
+      "priority": 2.0,
+      "group_amount": "amount",
+      "group_balance": "balance",
+      "group_credit_limit": null,
+      "group_currency": null,
+      "group_date": null,
+      "group_account": "account",
+      "group_merchant": null,
+      "group_reference": "reference",
+      "group_card_number": null,
+      "group_bank_name": "bankName",
+      "account_label_type": "Acct",
+      "default_currency": "INR",
+      "clean_merchant": false,
+      "merchant": "IMPS Transfer",
+      "sample_sms": "rs <AMOUNT> credited to your a/c xx<ACCTNUM> via imps on <NUM>apr<NUM> <TIME> imps ref no <NUM> bal:rs <AMOUNT> -<BANK> bank",
+      "sender_id": "AX-FEDBNK",
+      "version": 1
+    },
+    "cluster_key": "rs <AMOUNT> credited to your a/c xx<ACCTNUM> via imps on <NUM>apr<NUM> <TIME> imps ref no <NUM> bal:rs <AMOUNT> -<BANK> bank",
+    "sample_variants": [
+      "rs <AMOUNT> credited to your a/c xx<ACCTNUM> via imps on <NUM>apr<NUM> <TIME> imps ref no <NUM> bal:rs <AMOUNT> -<BANK> bank"
+    ]
+  },
+  {
+    "match_rate": 0.0,
+    "pattern": {
+      "regex": "inr (?<amount>[\\d,]+(?:\\.\\d{1,2})?) spent on (?<bankName>[A-Za-z]{2,20}(?:\\s+[A-Za-z]{2,10})?) bank card x(?<cardNumber>[\\d]+) @upi_(?<merchant>[A-Za-z0-9 ._\\-]+?) (?<date>\\d{1,2}[\\/\\-]\\d{1,2}[\\/\\-]\\d{2,4}|\\d{4}[\\/\\-]\\d{2}[\\/\\-]\\d{2}|\\d{1,2}[\\/\\-](?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\\/\\-]\\d{2,4}) \\d{1,2}:\\d{2}(?::\\d{2})?(?:\\s*[AP]M)?\\. avl lmt inr (?<creditLimit>[\\d,]+(?:\\.\\d{1,2})?)\\. sms blkcc \\d+ to \\S+",
+      "regex_options": [
+        "IGNORE_CASE"
+      ],
+      "transaction_type": "debit",
+      "priority": 2.0,
+      "group_amount": "amount",
+      "group_balance": null,
+      "group_credit_limit": "creditLimit",
+      "group_currency": null,
+      "group_date": "date",
+      "group_account": null,
+      "group_merchant": "merchant",
+      "group_reference": null,
+      "group_card_number": "cardNumber",
+      "group_bank_name": "bankName",
+      "account_label_type": "Credit Card",
+      "default_currency": "INR",
+      "clean_merchant": true,
+      "merchant": null,
+      "sample_sms": "inr <AMOUNT> spent on <BANK> bank card x<CARDNUM> @upi_satya prakash sing <DATE> <TIME>. avl lmt inr <AMOUNT>. sms blkcc <NUM> to <MERCHANT>",
+      "sender_id": "AX-YESBNK-S",
+      "version": 1
+    },
+    "cluster_key": "inr <AMOUNT> spent on <BANK> bank card x<CARDNUM> @upi_satya prakash sing <DATE> <TIME>. avl lmt inr <AMOUNT>. sms blkcc <NUM> to <MERCHANT>",
+    "sample_variants": [
+      "inr <AMOUNT> spent on <BANK> bank card x<CARDNUM> @upi_satya prakash sing <DATE> <TIME>. avl lmt inr <AMOUNT>. sms blkcc <NUM> to <MERCHANT>"
+    ]
+  },
+  {
+    "match_rate": 0.0,
+    "pattern": {
+      "regex": "withdrawn rs\\.(?<amount>[\\d,]+(?:\\.\\d{1,2})?) from (?<bankName>[A-Za-z]{2,20}(?:\\s+[A-Za-z]{2,10})?) bank card x(?<cardNumber>[\\d]+) at [\\s\\S]*? on [\\d:\\-\\/. ]+ bal rs\\.(?<balance>[\\d,]+(?:\\.\\d{1,2})?) not you\\?",
+      "regex_options": [
+        "IGNORE_CASE"
+      ],
+      "transaction_type": "debit",
+      "priority": 2.0,
+      "group_amount": "amount",
+      "group_balance": "balance",
+      "group_credit_limit": null,
+      "group_currency": null,
+      "group_date": null,
+      "group_account": null,
+      "group_merchant": null,
+      "group_reference": null,
+      "group_card_number": "cardNumber",
+      "group_bank_name": "bankName",
+      "account_label_type": "Card",
+      "default_currency": "INR",
+      "clean_merchant": false,
+      "merchant": "Withdrawal ({cardNumber})",
+      "sample_sms": "withdrawn rs.<AMOUNT> from <BANK> bank card x<CARDNUM> at +mumbai <BANK> avenue on <NUM>-<NUM>-<TIME>:<NUM> bal rs.<AMOUNT> not you? call <NUM>/sms block dc <NUM> to <NUM>",
+      "sender_id": "AD-HDFCBK-S",
+      "version": 1
+    },
+    "cluster_key": "withdrawn rs.<AMOUNT> from <BANK> bank card x<CARDNUM> at +mumbai <BANK> avenue on <NUM>-<NUM>-<TIME>:<NUM> bal rs.<AMOUNT> not you? call <NUM>/sms block dc <NUM> to <NUM>",
+    "sample_variants": [
+      "withdrawn rs.<AMOUNT> from <BANK> bank card x<CARDNUM> at +mumbai <BANK> avenue on <NUM>-<NUM>-<TIME>:<NUM> bal rs.<AMOUNT> not you? call <NUM>/sms block dc <NUM> to <NUM>"
+    ]
+  },
+  {
+    "match_rate": 0.0,
+    "pattern": {
+      "regex": "spent rs\\.(?<amount>[\\d,]+(?:\\.\\d{1,2})?) on (?<bankName>[A-Za-z]{2,20}(?:\\s+[A-Za-z]{2,10})?) bank card (?<cardNumber>[Xx*\\d]{4,20}) at (?<merchant>[A-Za-z0-9 *&'._-]{2,50}) on [\\d:\\.\\/\\-]+\\.not you\\?",
+      "regex_options": [
+        "IGNORE_CASE"
+      ],
+      "transaction_type": "debit",
+      "priority": 2.0,
+      "group_amount": "amount",
+      "group_balance": null,
+      "group_credit_limit": null,
+      "group_currency": null,
+      "group_date": null,
+      "group_account": null,
+      "group_merchant": "merchant",
+      "group_reference": null,
+      "group_card_number": "cardNumber",
+      "group_bank_name": "bankName",
+      "account_label_type": "Card",
+      "default_currency": "INR",
+      "clean_merchant": true,
+      "merchant": null,
+      "sample_sms": "spent rs.<AMOUNT> on <BANK> bank card <CARDNUM> at cas*swiggy on <NUM>-<NUM>-<TIME>:<NUM>.not you? to block+reissue call <NUM>/sms block cc <NUM> to <NUM>",
+      "sender_id": "AD-HDFCBK-S",
+      "version": 1
+    },
+    "cluster_key": "spent rs.<AMOUNT> on <BANK> bank card <CARDNUM> at cas*swiggy on <NUM>-<NUM>-<TIME>:<NUM>.not you? to block+reissue call <NUM>/sms block cc <NUM> to <NUM>",
+    "sample_variants": [
+      "spent rs.<AMOUNT> on <BANK> bank card <CARDNUM> at cas*swiggy on <NUM>-<NUM>-<TIME>:<NUM>.not you? to block+reissue call <NUM>/sms block cc <NUM> to <NUM>"
+    ]
+  }
+]

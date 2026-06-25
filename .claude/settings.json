@@ -1,0 +1,56 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|Bash",
+        "command": "code-review-graph update --quiet",
+        "timeout": 5000
+      }
+    ],
+    "SessionStart": [
+      {
+        "command": "code-review-graph status --json",
+        "timeout": 3000
+      }
+    ],
+    "PreCommit": [
+      {
+        "command": "code-review-graph detect-changes --brief",
+        "timeout": 10000
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Read(/Users/winaash/**)",
+      "Read(/Users/winaash/.gradle/**)",
+      "Read(/Users/winaash/.gradle/caches/**)",
+      "Read(/private/tmp/**)",
+
+      "Bash(jar tf:*)",
+      "Bash(jar xf:*)",
+
+      "Bash(cp /Users/winaash/.gradle/caches/modules-2/files-2.1/io.github.jan-tennert.supabase/auth-kt-android/3.1.1/ce954b5ed9393317217ac228c0ab0a2d45fdb759/auth-kt-release.aar auth.aar)",
+      "Bash(unzip -o auth.aar -d auth_extracted)",
+      "Bash(javap -cp auth_extracted/classes.jar io.github.jan.supabase.auth.SettingsSessionManager)",
+      "Bash(javap -classpath auth_extracted/classes.jar io/github/jan/supabase/auth/SettingsSessionManager)",
+
+      "Bash(cp /Users/winaash/.gradle/caches/modules-2/files-2.1/com.russhwolf/multiplatform-settings-no-arg-android/1.3.0/458f317b4b7daddef8e534b20928d60358e87ee8/multiplatform-settings-noarg-release.aar settings-noarg.aar)",
+      "Bash(unzip -o settings-noarg.aar -d settings_noarg_extracted)",
+      "Bash(javap -cp settings_noarg_extracted/classes.jar com.russhwolf.settings.Settings)",
+
+      "Bash(./gradlew --stop)",
+      "Bash(./gradlew :app:compileDebugKotlin)",
+      "Bash(./gradlew :app:compileDebugKotlin --quiet)",
+
+      "Bash(xargs ls)",
+      "Bash(xargs ls -1)",
+      "Bash(xargs cat)",
+      "Bash(grep -i *.kt)",
+
+      "mcp__code-review-graph__semantic_search_nodes_tool",
+      "mcp__code-review-graph__query_graph_tool",
+      "mcp__code-review-graph__cross_repo_search_tool"
+    ]
+  }
+}

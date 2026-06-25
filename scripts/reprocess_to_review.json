@@ -1,0 +1,34 @@
+[
+  {
+    "match_rate": 0.0,
+    "pattern": {
+      "regex": "rs\\.\\s*(?<amount>[\\d,]+(?:\\.\\d{1,2})?)\\s+has been credited to your\\s+(?<bankName>[A-Za-z]{2,20})\\s+credit card\\s+xxxx(?<cardNumber>\\d+),\\s+towards\\s+(?:reversal\\/cashback|reversal|cashback)\\s+from\\s+(?<merchant>[A-Za-z0-9 &._'-]+?)\\s+in\\s+for\\s+trxn\\.\\s+dated\\s+(?<date>\\d{1,2}[/\\-]\\d{1,2}[/\\-]\\d{2,4}|\\d{4}[/\\-]\\d{2}[/\\-]\\d{2}|\\d{1,2}[/\\-](?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[/\\-]\\d{2,4})",
+      "regex_options": [
+        "IGNORE_CASE"
+      ],
+      "transaction_type": "credit",
+      "priority": 1.0,
+      "group_amount": "amount",
+      "group_balance": null,
+      "group_credit_limit": null,
+      "group_currency": null,
+      "group_date": "date",
+      "group_account": null,
+      "group_merchant": "merchant",
+      "group_reference": null,
+      "group_card_number": "cardNumber",
+      "group_bank_name": "bankName",
+      "account_label_type": "Credit Card",
+      "default_currency": "INR",
+      "clean_merchant": true,
+      "merchant": null,
+      "sample_sms": "rs. <AMOUNT> has been credited to your <BANK> credit card xxxx<CARDNUM>, towards reversal/cashback from happyfares guwahati in for trxn. dated <DATE>",
+      "sender_id": null,
+      "version": 1
+    },
+    "cluster_key": "rs. <AMOUNT> has been credited to your <BANK> credit card xxxx<CARDNUM>, towards reversal/cashback from happyfares guwahati in for trxn. dated <DATE>",
+    "sample_variants": [
+      "rs. <AMOUNT> has been credited to your <BANK> credit card xxxx<CARDNUM>, towards reversal/cashback from happyfares guwahati in for trxn. dated <DATE>"
+    ]
+  }
+]

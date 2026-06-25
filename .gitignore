@@ -1,0 +1,58 @@
+# Android
+.gradle/
+**/build/
+local.properties
+*.apk
+*.aab
+*.aar
+*.ap_
+*.dex
+*.class
+
+# Android Studio
+.idea/
+*.iml
+
+# Kotlin
+.kotlin/
+
+# Proguard
+proguard/
+
+# Secrets
+.env
+*.env
+*.jks
+*.keystore
+
+# Generated scripts
+scripts/*_dump.json
+scripts/*_errors.json
+scripts/*_skipped*.json
+scripts/*_suggestions.json
+scripts/*_verification.json
+
+# Archives
+**/*.zip
+**/zip-*/
+
+# Logs
+*.log
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Docker / local DB
+*.sqlite
+*.db
+
+# OS
+.DS_Store
