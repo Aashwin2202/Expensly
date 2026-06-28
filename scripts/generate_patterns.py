@@ -1108,7 +1108,7 @@ def main():
     parser.add_argument(
         "--model", default=DEFAULT_MODEL,
         help=f"Anthropic model to use (default: {DEFAULT_MODEL}). "
-             "Use 'claude-sonnet-4-6' for better quality or 'claude-opus-4-8' for best quality.",
+             "Use 'claude-sonnet-4-6' for better quality or 'claude-opus-4-7' for best quality.",
     )
     parser.add_argument(
         "--limit", type=int, default=None,
@@ -1145,6 +1145,10 @@ def main():
     parser.add_argument(
         "--reprocess-indices", metavar="N[,N...]", default=None,
         help="Comma-separated indices from the skipped file to reprocess. E.g. --reprocess-indices 0,2",
+    )
+    parser.add_argument(
+        "--classify-only", action="store_true",
+        help="Fetch, cluster, and run pre-flight classify — write patterns_skipped_fake.json then exit. No LLM calls.",
     )
     args = parser.parse_args()
 
@@ -1241,7 +1245,7 @@ def main():
                 reprocess_review.append({"match_rate": round(rate, 3), "pattern": sanitised,
                                          "cluster_key": cluster_key, "sample_variants": [v["skeleton_text"] for v in variants]})
 
-        scripts_dir = Path(__file__).parent
+        scripts_dir = Path("/tmp")
         with open(scripts_dir / "reprocess_ready.json", "w") as f:
             json.dump(reprocess_ready, f, indent=2, ensure_ascii=False)
         with open(scripts_dir / "reprocess_to_review.json", "w") as f:
@@ -1283,10 +1287,36 @@ def main():
                     for v in variants
                 ],
             })
-        out_path = Path(__file__).parent / "clusters_dump.json"
+        out_path = Path("/tmp") / "clusters_dump.json"
         with open(out_path, "w") as f:
             json.dump(dump, f, indent=2, ensure_ascii=False)
         print(f"Wrote {len(dump)} clusters to {out_path}")
+        return
+
+    if args.classify_only:
+        skipped_classify = []
+        cluster_items_classify = list(clusters.items())
+        total_classify = len(cluster_items_classify)
+        for idx, (cluster_key, variants) in enumerate(cluster_items_classify, 1):
+            total_hits = sum(v["hit_count"] for v in variants)
+            is_genuine, reason = classify_skeleton(cluster_key)
+            if not is_genuine:
+                print(f"[{idx}/{total_classify}] SKIP — {reason[:80]}")
+                skipped_classify.append({
+                    "cluster_key": cluster_key,
+                    "reason": reason,
+                    "total_hits": total_hits,
+                    "variant_count": len(variants),
+                    "sample_variants": [v["skeleton_text"] for v in variants[:3]],
+                })
+            else:
+                print(f"[{idx}/{total_classify}] genuine — {cluster_key[:80]}")
+        out_path = Path("/tmp") / "patterns_skipped_fake.json"
+        with open(out_path, "w") as f:
+            json.dump(skipped_classify, f, indent=2, ensure_ascii=False)
+        genuine_count = total_classify - len(skipped_classify)
+        print(f"\nGenuine: {genuine_count}  Skipped: {len(skipped_classify)}")
+        print(f"Wrote {out_path}")
         return
 
     ready: list[dict] = []
@@ -1301,6 +1331,7 @@ def main():
 
     # Pre-flight: classify and resolve sender_id for all clusters
     pending: list[tuple] = []   # (idx, cluster_key, variants, resolved_sender_id, has_conflict, bank_code_map)
+    preflight_hashes: list[str] = []
     for idx, (cluster_key, variants) in enumerate(cluster_items, 1):
         total_hits = sum(v["hit_count"] for v in variants)
         is_genuine, reason = classify_skeleton(cluster_key)
@@ -1313,10 +1344,16 @@ def main():
                 "variant_count": len(variants),
                 "sample_variants": [v["skeleton_text"] for v in variants[:3]],
             })
-            processed_hashes.extend(v["pattern_hash"] for v in variants if v.get("pattern_hash"))
+            preflight_hashes.extend(v["pattern_hash"] for v in variants if v.get("pattern_hash"))
             continue
         resolved_sender_id, has_conflict, bank_code_map = resolve_sender_id(variants)
         pending.append((idx, cluster_key, variants, resolved_sender_id, has_conflict, bank_code_map))
+
+    # Delete pre-flight skipped rows immediately so they don't accumulate
+    if preflight_hashes:
+        print(f"Cleaning up {len(preflight_hashes)} pre-flight skipped rows...")
+        stamp_processed(supabase_client, preflight_hashes)
+        processed_hashes.extend(preflight_hashes)
 
     print(f"\n{len(skipped)} skipped (fake/promo), {len(pending)} genuine clusters → sending to Claude in batches of {args.batch_size}")
 
@@ -1329,6 +1366,7 @@ def main():
         # Build tuples for call_claude_batch: (idx, key, variants, sender_id, conflict, bank_map)
         results = call_claude_batch(claude_client, batch, args.model)
 
+        batch_hashes: list[str] = []
         for (idx, cluster_key, variants, resolved_sender_id, has_conflict, bank_code_map), pattern_row in zip(batch, results):
             total_hits = sum(v["hit_count"] for v in variants)
             print(f"  [{idx}/{total}] {total_hits} hits | {len(variants)} variants | {cluster_key[:80]}")
@@ -1349,7 +1387,7 @@ def main():
                     "variant_count": len(variants),
                     "sample_variants": [v["skeleton_text"] for v in variants[:3]],
                 })
-                processed_hashes.extend(v["pattern_hash"] for v in variants if v.get("pattern_hash"))
+                batch_hashes.extend(v["pattern_hash"] for v in variants if v.get("pattern_hash"))
                 continue
 
             # Handle sender_id_suggestion for conflicted clusters
@@ -1365,7 +1403,7 @@ def main():
                         "variant_count": len(variants),
                         "sample_variants": [v["skeleton_text"] for v in variants[:5]],
                     })
-                    processed_hashes.extend(v["pattern_hash"] for v in variants if v.get("pattern_hash"))
+                    batch_hashes.extend(v["pattern_hash"] for v in variants if v.get("pattern_hash"))
                     continue
                 else:
                     print(f"    [GENERIC] treating as bank-agnostic (banks: {banks})")
@@ -1388,14 +1426,19 @@ def main():
                     "sample_variants": [v["skeleton_text"] for v in variants[:3]],
                 })
             # Mark as processed regardless of pass/fail — pattern is in output files
-            processed_hashes.extend(v["pattern_hash"] for v in variants if v.get("pattern_hash"))
+            batch_hashes.extend(v["pattern_hash"] for v in variants if v.get("pattern_hash"))
+
+        # Delete this batch's processed rows immediately before moving to the next batch
+        if batch_hashes:
+            stamp_processed(supabase_client, batch_hashes)
+            processed_hashes.extend(batch_hashes)
 
         # Brief pause between batches to stay within rate limits
         if batch_start + args.batch_size < len(pending):
             time.sleep(2)
 
     # 5. Write output files
-    scripts_dir = Path(__file__).parent
+    scripts_dir = Path("/tmp")
     with open(scripts_dir / "patterns_ready.json", "w") as f:
         json.dump(ready, f, indent=2, ensure_ascii=False)
     with open(scripts_dir / "patterns_to_review.json", "w") as f:
@@ -1447,11 +1490,7 @@ def main():
     else:
         print("No patterns passed validation. Check scripts/patterns_to_review.json.")
 
-    # 7. Clean up processed rows from unknown_patterns.
-    # Errors are intentionally excluded — those clusters will be retried on the next run.
-    if processed_hashes:
-        print(f"\nCleaning up {len(processed_hashes)} processed rows from unknown_patterns...")
-        stamp_processed(supabase_client, processed_hashes)
+    print(f"\nTotal rows deleted from unknown_patterns this run: {len(processed_hashes)}")
 
 
 if __name__ == "__main__":
