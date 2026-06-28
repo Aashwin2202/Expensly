@@ -166,7 +166,9 @@ object BankSenderDetector {
         "JANATX"    to "JANA",
         // Equitas
         "ESFBNK"    to "EQUITAS",
-        "EQUITAS"   to "EQUITAS"
+        "EQUITAS"   to "EQUITAS",
+        // SLC Bank
+        "SLCBNK"    to "SLC BANK"
     )
 
     /**

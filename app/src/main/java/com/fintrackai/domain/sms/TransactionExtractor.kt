@@ -22,9 +22,9 @@ data class ExtractedTransaction(
 object TransactionExtractor {
 
     private const val CURRENCY_AMOUNT =
-        """(?<currency>USD|EUR|GBP|JPY|AUD|CAD|CHF|SGD|AED|Rs\.?|INR|₹|rs\.?)\s*(?<amount>\d+(?:[.,]\d{2,3})*(?:\.\d{1,2})?)"""
+        """(?<currency>USD|EUR|GBP|JPY|AUD|CAD|CHF|SGD|AED|THB|MYR|BHD|QAR|KWD|OMR|SAR|HKD|CNY|NZD|ZAR|Rs\.?|INR|₹|rs\.?)\s*(?<amount>\d+(?:[.,]\d{2,3})*(?:\.\d{1,2})?)"""
 
-    private val SUPPORTED_CURRENCIES = listOf("USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "SGD", "AED")
+    private val SUPPORTED_CURRENCIES = listOf("USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "SGD", "AED", "THB", "MYR", "BHD", "QAR", "KWD", "OMR", "SAR", "HKD", "CNY", "NZD", "ZAR")
 
     private val MONTH_NUMBERS = mapOf(
         "jan" to 1, "feb" to 2, "mar" to 3, "apr" to 4,
@@ -186,12 +186,12 @@ object TransactionExtractor {
 
     // Hoisted from extract4DigitNumbers — compiled once per class load instead of per SMS.
     private val CARD_KEYWORD_PATTERN = Regex(
-        """(?:Card|card|ending|A/C|A/c|a/c|A/C\.?|account|acct|credit\s+card|CREDIT\s+CARD|ENDING\s+WITH|ending\s+with|no\.?|number|NO\.?|NUMBER)[\s:]*([*Xx\d]+)""",
+        """(?:Card|card|ending|A/C|A/c|a/c|A/C\.?|account|acct|credit\s+card|CREDIT\s+CARD|ENDING\s+WITH|ending\s+with)[\s:]*([*Xx\d]+)""",
         RegexOption.IGNORE_CASE
     )
     private val ANY_4_DIGIT_PATTERN = Regex("""\b(\d{4})\b""")
     private val ACCOUNT_KEYWORD_CONTEXT_PATTERN = Regex(
-        """(?:Card|card|ending|A/C|account|credit\s+card|CREDIT\s+CARD|ENDING\s+WITH|ending\s+with|no\.?|number|NO\.?|NUMBER)""",
+        """(?:Card|card|ending|A/C|account|credit\s+card|CREDIT\s+CARD|ENDING\s+WITH|ending\s+with)""",
         RegexOption.IGNORE_CASE
     )
     private val DATE_CONTEXT_PATTERN = Regex("""/|-|on|at|date""", RegexOption.IGNORE_CASE)
@@ -358,19 +358,19 @@ object TransactionExtractor {
     private val MASKED_CARD_LAST4_PATTERN = Regex("""[*Xx]*(\d{4,})$""")
     private val ISO_DATE_IN_TEXT_PATTERN = Regex("""\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[-/]\d{1,2}[-/]\d{2,4}""")
     private val WITHDRAWN_CARD_PATTERN = Regex(
-        """(?:Spent|Withdrawn)\s+(?<currency>USD|EUR|GBP|JPY|AUD|CAD|CHF|SGD|AED|Rs\.?|INR|₹|rs\.?)\s*(?<amount>\d+(?:[.,]\d{3})*(?:\.\d{1,2})?)\s+(?:From|On)\s+(?<account>[A-Z][A-Za-z0-9\s&]+?\s+(?:Bank\s+)?Card\s+[*Xx0-9]+)\s+At\s+(?<merchant>[+\-]?[A-Za-z0-9][A-Za-z0-9\s.+\-]*?)(?:\s+On\s+\d|\s+Bal\b|\s+Not\b|\.Not\b|$)""",
+        """(?:Spent|Withdrawn)\s+(?<currency>USD|EUR|GBP|JPY|AUD|CAD|CHF|SGD|AED|THB|MYR|BHD|QAR|KWD|OMR|SAR|HKD|CNY|NZD|ZAR|Rs\.?|INR|₹|rs\.?)\s*(?<amount>\d+(?:[.,]\d{3})*(?:\.\d{1,2})?)\s+(?:From|On)\s+(?<account>[A-Z][A-Za-z0-9\s&]+?\s+(?:Bank\s+)?Card\s+[*Xx0-9]+)\s+At\s+(?<merchant>[+\-]?[A-Za-z0-9][A-Za-z0-9\s.+\-]*?)(?:\s+On\s+\d|\s+Bal\b|\s+Not\b|\.Not\b|$)""",
         RegexOption.IGNORE_CASE
     )
     private val BANK_CARD_LABEL_PATTERN = Regex("""^([A-Z][A-Za-z0-9\s&]+?)\s+Bank\s+Card\s+([*Xx0-9]+)""", RegexOption.IGNORE_CASE)
     private val ISO_DATE_ONLY_PATTERN = Regex("""\d{4}[-/]\d{1,2}[-/]\d{1,2}""")
     private val CREDIT_CARD_ENDING_PATTERN = Regex(
-        """(?<currency>USD|EUR|GBP|JPY|AUD|CAD|CHF|SGD|AED|Rs\.?|INR|₹|rs\.?)\s*(?<amount>\d+(?:[.,]\d{3})*(?:\.\d{1,2})?)\s+spent\s+on\s+your\s+(?<account>[A-Z][A-Za-z0-9\s&]+?\s+Credit\s+Card)\s+ending\s+(?<cardNumber>[\dXx*]+)\s+at\s+(?<merchant>[A-Za-z0-9\s&]+?)(?:\s+on\s+|\s+at\s+|$)""",
+        """(?<currency>USD|EUR|GBP|JPY|AUD|CAD|CHF|SGD|AED|THB|MYR|BHD|QAR|KWD|OMR|SAR|HKD|CNY|NZD|ZAR|Rs\.?|INR|₹|rs\.?)\s*(?<amount>\d+(?:[.,]\d{3})*(?:\.\d{1,2})?)\s+spent\s+on\s+your\s+(?<account>[A-Z][A-Za-z0-9\s&]+?\s+Credit\s+Card)\s+ending\s+(?<cardNumber>[\dXx*]+)\s+at\s+(?<merchant>[A-Za-z0-9\s&]+?)(?:\s+on\s+|\s+at\s+|$)""",
         RegexOption.IGNORE_CASE
     )
     private val BANK_FIRST_WORD_PATTERN = Regex("""^([A-Z][A-Za-z0-9]+)""")
     private val SIMPLE_DATE_SLASH_PATTERN = Regex("""\d{1,2}/\d{1,2}/\d{2,4}""")
     private val CREDIT_CARD_SPEND_PATTERN = Regex(
-        """(?<currency>USD|EUR|GBP|JPY|AUD|CAD|CHF|SGD|AED|Rs\.?|INR|₹|rs\.?)\s*(?<amount>\d+(?:[.,]\d{2,3})*(?:\.\d{1,2})?|\.\d{1,2})\s+spent\s+(?:using\s+|on\s+)[^.]*?(?:Card|card)\s+(?<cardNumber>[*Xx0-9]+)\s+on\s+(?<date>\d{1,2}[-/](?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[-/]\d{2,4}|\d{1,2}[-/]\d{1,2}[-/]\d{2,4})\s+(?:on|at)\s+(?<merchant>(?:null\*)?[A-Za-z0-9*& -]+?)(?:\.|,|\s+Avl\b|$)""",
+        """(?<currency>USD|EUR|GBP|JPY|AUD|CAD|CHF|SGD|AED|THB|MYR|BHD|QAR|KWD|OMR|SAR|HKD|CNY|NZD|ZAR|Rs\.?|INR|₹|rs\.?)\s*(?<amount>\d+(?:[.,]\d{2,3})*(?:\.\d{1,2})?|\.\d{1,2})\s+spent\s+(?:using\s+|on\s+)[^.]*?(?:Card|card)\s+(?<cardNumber>[*Xx0-9]+)\s+on\s+(?<date>\d{1,2}[-/](?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[-/]\d{2,4}|\d{1,2}[-/]\d{1,2}[-/]\d{2,4})\s+(?:on|at)\s+(?<merchant>(?:null\*)?[A-Za-z0-9*& -]+?)(?:\.|,|\s+Avl\b|$)""",
         RegexOption.IGNORE_CASE
     )
     private val SPEND_ACCOUNT_PATTERN = Regex("""([A-Z][A-Za-z0-9\s&]+?\s+Bank\s+Card\s+[*Xx0-9]+)""", RegexOption.IGNORE_CASE)
@@ -464,7 +464,7 @@ object TransactionExtractor {
         RegexOption.IGNORE_CASE
     )
     private val DEBIT_PATTERN_3 = Regex(
-        """(?<currency>USD|EUR|GBP|JPY|AUD|CAD|CHF|SGD|AED|Rs\.?|INR|₹|rs\.?)\s*(?<amount>\d+(?:[.,]\d{3})*(?:\.\d{1,2})?)\s+(?:paid\s+to|spent\s+at|debited\s+for)\s+(?<merchant>[^\n,]+?)(?:\s+on\s+|\s+at\s+)?(?<date>\d{1,2}[/-]\d{1,2}[/-]\d{2,4})?""",
+        """(?<currency>USD|EUR|GBP|JPY|AUD|CAD|CHF|SGD|AED|THB|MYR|BHD|QAR|KWD|OMR|SAR|HKD|CNY|NZD|ZAR|Rs\.?|INR|₹|rs\.?)\s*(?<amount>\d+(?:[.,]\d{3})*(?:\.\d{1,2})?)\s+(?:paid\s+to|spent\s+at|debited\s+for)\s+(?<merchant>[^\n,]+?)(?:\s+on\s+|\s+at\s+)?(?<date>\d{1,2}[/-]\d{1,2}[/-]\d{2,4})?""",
         RegexOption.IGNORE_CASE
     )
     private val CREDIT_CARD_PAYMENT_PATTERN = Regex(

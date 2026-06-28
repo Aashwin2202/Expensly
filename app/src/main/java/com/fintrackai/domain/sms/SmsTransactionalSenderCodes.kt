@@ -53,6 +53,8 @@ object SmsTransactionalSenderCodes {
         // J&K / Karnataka / Tamilnad Mercantile / South Indian Bank
         "JKBANK", "JKBANQ", "KTKBNK", "KARNAT", "TMBL", "TMBANK",
         "SIBSMS", "SOUIBNK", "SIBNET", "SIBMOB", "SIBPAY", "SIBUPI", "SIBIBL", "SIBOTB",
+        // SLC Bank (Shivalik Small Finance Bank / formerly Shivalik Mercantile Co-op)
+        "SLCBNK",
         // Karur Vysya / Catholic Syrian / City Union / DCB
         "KVBLIN", "KVBANK", "KVBSMS", "CSBBNK", "CSBMOB", "CUBANK", "CUBSMS", "DCBBNK", "DCBSMS",
         // Lakshmi Vilas Bank (merged into DBS India, Nov 2020)

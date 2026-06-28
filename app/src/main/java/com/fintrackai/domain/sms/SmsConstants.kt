@@ -6,7 +6,11 @@ object SmsConstants {
     val TRANSACTION_KEYWORDS = listOf(
         "debited", "credited", "withdrawn", "withdrawal", "transferred",
         "purchase", "sent", "spent", "paid", "received", "deposited", "executed", "loaded",
-        "deducted"
+        "deducted",
+        // SIB-style colon-format: "UPI debit:Rs.X" / "UPI Credit:INR Rs.X"
+        "debit", "credit",
+        // Slice-style completion: "IMPS payment of Rs. X ... done on ... is successful"
+        "successful"
     )
 
     // Compiled as whole-word patterns to avoid false positives like "consent" matching "sent".
@@ -47,12 +51,26 @@ object SmsConstants {
         Regex("""(?:shall|will)\s+be\s+auto[\s-]?debited\b""", RegexOption.IGNORE_CASE),
         Regex("""will\s+be\s+(?:debited|deducted|charged|processed)\b""", RegexOption.IGNORE_CASE),
         Regex("""mandate\s+(?:registered|created|approved|set\s+up)""", RegexOption.IGNORE_CASE),
-        // Incoming UPI mandate request — "received a upi-mandate request ... authorize"
-        Regex("""(?:upi[\s-])?mandate\s+request\b""", RegexOption.IGNORE_CASE),
+        // Incoming UPI mandate request — "received a upi-mandate collect request ... authorize"
+        Regex("""(?:upi[\s-])?mandate\s+(?:collect\s+)?request\b""", RegexOption.IGNORE_CASE),
+        // "login/log in to ... app to authorize" — UPI mandate authorization prompt
+        Regex("""(?:log\s*in|login)\s+(?:into|to)\s+.{0,60}\bauthorize\b""", RegexOption.IGNORE_CASE),
         // NACH/Auto-pay mandate acknowledgement — "received today for processing", "received for processing"
         Regex("""(?:NACH|UMRN|Auto\s*Pay).{0,80}received\s+(?:today\s+)?for\s+processing""", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)),
         // "Freq MNTH/QRTR/WEEK" — mandate frequency marker unique to NACH notifications
         Regex("""Freq\s+(?:MNTH|QRTR|WEEK|DAIL|BIMN|MIAN|YRLY|ZZZZ)""", RegexOption.IGNORE_CASE),
+        // Reversal pending — "reversal of txn ... will be credited (if debited)" or "will be credited in X hours"
+        Regex("""reversal\s+of\s+txn\b""", RegexOption.IGNORE_CASE),
+        // "will be credited" — future credit, not a completed transaction
+        Regex("""will\s+be\s+credited\b""", RegexOption.IGNORE_CASE),
+        // Card application processing notification — not a transaction
+        Regex("""(?:give\s+us|allow)\s+\d+\s+working\s+days?\s+to\s+process""", RegexOption.IGNORE_CASE),
+        // Credit card limit change — "request to re-set/reset the limit ... has been accepted"
+        Regex("""(?:re-?set|change|update|modify)\s+the\s+limit\b""", RegexOption.IGNORE_CASE),
+        // Auto pay activation notification — not a debit, just setup confirmation
+        Regex("""auto\s*pay\s+activation\s+is\s+successful\b""", RegexOption.IGNORE_CASE),
+        // "max limit set for txn" — auto pay setup marker
+        Regex("""max\s+limit\s+set\s+for\s+txn\b""", RegexOption.IGNORE_CASE),
     )
 
     val OTP_KEYWORDS = listOf(
@@ -63,7 +81,7 @@ object SmsConstants {
 
     val BANK_NAMES = listOf(
         "HDFC", "ICICI", "SBI", "AXIS", "KOTAK", "YES", "IDFC", "PNB", "PUNJAB", "RBL", "DBS", "HSBC", "CITI",
-        "BOI", "INDIAN BANK", "UTKARSH", "SOUTH INDIAN BANK", "CANARA", "UNION", "BANK OF BARODA", "BOB",
+        "BOI", "INDIAN BANK", "UTKARSH", "SOUTH INDIAN BANK", "SLC BANK", "CANARA", "UNION", "BANK OF BARODA", "BOB",
         "CENTRAL", "UCO", "KARNATAKA", "FEDERAL", "BANDHAN", "AU SMALL", "JANA", "EQUITAS"
     )
 

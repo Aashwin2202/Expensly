@@ -40,7 +40,7 @@ data class PatternEntry(
 object BankPatternRegistry {
 
     private const val CURRENCY_AMOUNT =
-        """(?<currency>USD|EUR|GBP|JPY|AUD|CAD|CHF|SGD|AED|Rs\.?|INR|₹|rs\.?)\s*(?<amount>\d+(?:[.,]\d{2,3})*(?:\.\d{1,2})?)"""
+        """(?<currency>USD|EUR|GBP|JPY|AUD|CAD|CHF|SGD|AED|THB|MYR|BHD|QAR|KWD|OMR|SAR|HKD|CNY|NZD|ZAR|Rs\.?|INR|₹|rs\.?)\s*(?<amount>\d+(?:[.,]\d{2,3})*(?:\.\d{1,2})?)"""
 
     // ── HDFC ─────────────────────────────────────────────────────────────────
 
@@ -400,17 +400,23 @@ object BankPatternRegistry {
         PatternEntry(
             name = "SIB UPI credit",
             regex = Regex(
-                """UPI\s+Credit\s*:\s*(?:INR\s+)?$CURRENCY_AMOUNT\s+in\s+A/?[Cc]\.?\s+(?<account>[*Xx0-9]+)\.?\s+Info\s*:\s*UPI/(?<bank>[A-Za-z0-9]+)/(?<ref>\d+)/""",
+                """UPI\s+Credit\s*:\s*(?:INR\s+)?$CURRENCY_AMOUNT\s+in\s+A/?[Cc]\.?\s+(?<account>[*Xx0-9]+)\.?\s+Info\s*:\s*UPI/(?<bank>[A-Za-z0-9]+)/(?<ref>\d+)/(?<payee>[^.\n]+?)(?:\s+on\s+|\s*\.|$)""",
                 RegexOption.IGNORE_CASE
             )
         ) { m ->
+            val rawPayee = m.groups["payee"]?.value?.trim()
+            val merchant = if (!rawPayee.isNullOrBlank()) {
+                TransactionExtractor.cleanMerchantName(rawPayee) ?: rawPayee
+            } else {
+                m.groups["bank"]?.value?.trim()?.uppercase()
+            }
             ExtractedTransaction(
                 type = "credit",
                 amount = parseAmount(m.groups["amount"]?.value),
                 currency = TransactionExtractor.normalizeCurrencyCode(m.groups["currency"]?.value),
                 date = extractDate(text),
                 fullAccount = m.groups["account"]?.value?.trim(),
-                merchant = m.groups["bank"]?.value?.trim()?.uppercase(),
+                merchant = merchant,
                 reference = m.groups["ref"]?.value ?: reference
             )
         },
@@ -423,13 +429,17 @@ object BankPatternRegistry {
             )
         ) { m ->
             val rrnMatch = Regex("""RRN\s*[:\s]*(\d+)""", RegexOption.IGNORE_CASE).find(text)
+            val account = m.groups["account"]?.value?.trim()
+            val last4 = account?.filter { it.isDigit() }?.takeLast(4)
+            val upiMerchant = extractVPA(text)?.let { TransactionExtractor.cleanMerchantName(it) }
+                ?: if (last4 != null) "UPI Transfer ($last4)" else "UPI Transfer"
             ExtractedTransaction(
                 type = "debit",
                 amount = parseAmount(m.groups["amount"]?.value),
                 currency = TransactionExtractor.normalizeCurrencyCode(m.groups["currency"]?.value),
                 date = m.groups["date"]?.value?.trim(),
-                fullAccount = m.groups["account"]?.value?.trim(),
-                merchant = null,
+                fullAccount = account,
+                merchant = upiMerchant,
                 reference = rrnMatch?.groupValues?.get(1) ?: reference
             )
         }
@@ -577,6 +587,86 @@ object BankPatternRegistry {
         }
     )
 
+    // ── Slice Bank ───────────────────────────────────────────────────────────
+
+    private val sliceBankPatterns: List<PatternEntry> = listOf(
+
+        PatternEntry(
+            name = "Slice UPI sent",
+            regex = Regex(
+                """$CURRENCY_AMOUNT\s+sent\s+from\s+a/?c\s+(?<account>[*Xx0-9]+)\s+on\s+(?<date>\d{1,2}[-/][A-Za-z]{3}[-/]\d{2,4})\s+to\s+(?<merchant>[A-Za-z][A-Za-z0-9 .&'-]+?)\s*\(UPI\s+Ref\s*:\s*(?<ref>\d+)\)""",
+                RegexOption.IGNORE_CASE
+            )
+        ) { m ->
+            ExtractedTransaction(
+                type = "debit",
+                amount = parseAmount(m.groups["amount"]?.value),
+                currency = TransactionExtractor.normalizeCurrencyCode(m.groups["currency"]?.value),
+                date = m.groups["date"]?.value?.trim(),
+                fullAccount = m.groups["account"]?.value?.trim(),
+                merchant = TransactionExtractor.cleanMerchantName(m.groups["merchant"]?.value?.trim()),
+                reference = m.groups["ref"]?.value ?: reference
+            )
+        },
+
+        PatternEntry(
+            name = "Slice IMPS sent",
+            regex = Regex(
+                """IMPS\s+payment\s+of\s+$CURRENCY_AMOUNT\s+from\s+A/?c\s+(?<account>[*Xx0-9]+)\s+done\s+on\s+(?<date>\d{1,2}[-/][A-Za-z]{3}[-/]\d{2,4})\s+to\s+(?<merchant>[A-Za-z][A-Za-z0-9 .&'-]+?)\s+is\s+successful\s*\(Ref\s+ID\s*:\s*(?<ref>\d+)\)""",
+                RegexOption.IGNORE_CASE
+            )
+        ) { m ->
+            ExtractedTransaction(
+                type = "debit",
+                amount = parseAmount(m.groups["amount"]?.value),
+                currency = TransactionExtractor.normalizeCurrencyCode(m.groups["currency"]?.value),
+                date = m.groups["date"]?.value?.trim(),
+                fullAccount = m.groups["account"]?.value?.trim(),
+                merchant = TransactionExtractor.cleanMerchantName(m.groups["merchant"]?.value?.trim()),
+                reference = m.groups["ref"]?.value ?: reference
+            )
+        },
+
+        PatternEntry(
+            name = "Slice payment successful",
+            regex = Regex(
+                """Payment\s+of\s+(?:$CURRENCY_AMOUNT|(?<plainamount>\d+(?:\.\d{1,2})?))\s+on\s+(?<date>\d{1,2}[-/][A-Za-z]{3}[-/]\d{2,4})\s+to\s+a/?c\s+(?<account>[*Xx0-9]+)\s+is\s+successful""",
+                RegexOption.IGNORE_CASE
+            )
+        ) { m ->
+            val amt = parseAmount(m.groups["amount"]?.value) ?: parseAmount(m.groups["plainamount"]?.value)
+            val account = m.groups["account"]?.value?.trim()
+            val last4 = account?.filter { it.isDigit() }?.takeLast(4)
+            ExtractedTransaction(
+                type = "debit",
+                amount = amt,
+                currency = TransactionExtractor.normalizeCurrencyCode(m.groups["currency"]?.value),
+                date = m.groups["date"]?.value?.trim(),
+                fullAccount = account,
+                merchant = if (last4 != null) "Payment ($last4)" else "Payment",
+                reference = reference
+            )
+        },
+
+        PatternEntry(
+            name = "Slice received NEFT/IMPS",
+            regex = Regex(
+                """$CURRENCY_AMOUNT\s+received\s+in\s+a/?c\s+(?<account>[*Xx0-9]+)\s+from\s+(?<merchant>[A-Za-z][A-Za-z0-9 .&'-]+?)\s+on\s+(?<date>\d{1,2}[-/][A-Za-z]{3}[-/]\d{2,4})\s*\((?:NEFT|IMPS|UPI)\s+Ref\s+(?:No\.?\s+)?(?<ref>[A-Za-z0-9]+)\)""",
+                RegexOption.IGNORE_CASE
+            )
+        ) { m ->
+            ExtractedTransaction(
+                type = "credit",
+                amount = parseAmount(m.groups["amount"]?.value),
+                currency = TransactionExtractor.normalizeCurrencyCode(m.groups["currency"]?.value),
+                date = m.groups["date"]?.value?.trim(),
+                fullAccount = m.groups["account"]?.value?.trim(),
+                merchant = TransactionExtractor.cleanMerchantName(m.groups["merchant"]?.value?.trim()),
+                reference = m.groups["ref"]?.value ?: reference
+            )
+        }
+    )
+
     // ── Per-bank map ──────────────────────────────────────────────────────────
 
     /**
@@ -589,6 +679,7 @@ object BankPatternRegistry {
         "ICICI"            to iciciPatterns,
         "AXIS"             to axisPatterns,
         "SOUTH INDIAN BANK" to southIndianBankPatterns,
+        "SLC BANK"         to sliceBankPatterns,
         "BOI"              to boiPatterns,
         "UTKARSH"          to utkarshPatterns,
         "INDIAN BANK"      to indianBankPatterns
@@ -800,7 +891,7 @@ object BankPatternRegistry {
         PatternEntry(
             name = "Spent/Withdrawn card at",
             regex = Regex(
-                """(?:Spent|Withdrawn)\s+(?<currency>USD|EUR|GBP|JPY|AUD|CAD|CHF|SGD|AED|Rs\.?|INR|₹|rs\.?)\s*(?<amount>\d+(?:[.,]\d{3})*(?:\.\d{1,2})?)\s+(?:From|On)\s+(?<account>[A-Z][A-Za-z0-9\s&]+?\s+(?:Bank\s+)?Card\s+[*Xx0-9]+)\s+At\s+(?<merchant>[+\-]?[A-Za-z0-9][A-Za-z0-9\s.+\-]*?)(?:\s+On\s+\d|\s+Bal\b|\s+Not\b|\.Not\b|$)""",
+                """(?:Spent|Withdrawn)\s+(?<currency>USD|EUR|GBP|JPY|AUD|CAD|CHF|SGD|AED|THB|MYR|BHD|QAR|KWD|OMR|SAR|HKD|CNY|NZD|ZAR|Rs\.?|INR|₹|rs\.?)\s*(?<amount>\d+(?:[.,]\d{3})*(?:\.\d{1,2})?)\s+(?:From|On)\s+(?<account>[A-Z][A-Za-z0-9\s&]+?\s+(?:Bank\s+)?Card\s+[*Xx0-9]+)\s+At\s+(?<merchant>[+\-]?[A-Za-z0-9][A-Za-z0-9\s.+\-]*?)(?:\s+On\s+\d|\s+Bal\b|\s+Not\b|\.Not\b|$)""",
                 RegexOption.IGNORE_CASE
             )
         ) { m ->
@@ -837,7 +928,7 @@ object BankPatternRegistry {
         PatternEntry(
             name = "spent on CC ending",
             regex = Regex(
-                """(?<currency>USD|EUR|GBP|JPY|AUD|CAD|CHF|SGD|AED|Rs\.?|INR|₹|rs\.?)\s*(?<amount>\d+(?:[.,]\d{3})*(?:\.\d{1,2})?)\s+spent\s+on\s+your\s+(?<account>[A-Z][A-Za-z0-9\s&]+?\s+Credit\s+Card)\s+ending\s+(?<cardNumber>[\dXx*]+)\s+at\s+(?<merchant>[A-Za-z0-9\s&]+?)(?:\s+on\s+|\s+at\s+|$)""",
+                """(?<currency>USD|EUR|GBP|JPY|AUD|CAD|CHF|SGD|AED|THB|MYR|BHD|QAR|KWD|OMR|SAR|HKD|CNY|NZD|ZAR|Rs\.?|INR|₹|rs\.?)\s*(?<amount>\d+(?:[.,]\d{3})*(?:\.\d{1,2})?)\s+spent\s+on\s+your\s+(?<account>[A-Z][A-Za-z0-9\s&]+?\s+Credit\s+Card)\s+ending\s+(?<cardNumber>[\dXx*]+)\s+at\s+(?<merchant>[A-Za-z0-9\s&]+?)(?:\s+on\s+|\s+at\s+|$)""",
                 RegexOption.IGNORE_CASE
             )
         ) { m ->
@@ -863,7 +954,7 @@ object BankPatternRegistry {
         PatternEntry(
             name = "spent using/on card date on/at",
             regex = Regex(
-                """(?<currency>USD|EUR|GBP|JPY|AUD|CAD|CHF|SGD|AED|Rs\.?|INR|₹|rs\.?)\s*(?<amount>\d+(?:[.,]\d{2,3})*(?:\.\d{1,2})?|\.\d{1,2})\s+spent\s+(?:using\s+|on\s+)[^.]*?(?:Card|card)\s+(?<cardNumber>[*Xx0-9]+)\s+on\s+(?<date>\d{1,2}[-/](?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[-/]\d{2,4}|\d{1,2}[-/]\d{1,2}[-/]\d{2,4})\s+(?:on|at)\s+(?<merchant>(?:null\*)?[A-Za-z0-9*& -]+?)(?:\.|,|\s+Avl\b|$)""",
+                """(?<currency>USD|EUR|GBP|JPY|AUD|CAD|CHF|SGD|AED|THB|MYR|BHD|QAR|KWD|OMR|SAR|HKD|CNY|NZD|ZAR|Rs\.?|INR|₹|rs\.?)\s*(?<amount>\d+(?:[.,]\d{2,3})*(?:\.\d{1,2})?|\.\d{1,2})\s+spent\s+(?:using\s+|on\s+)[^.]*?(?:Card|card)\s+(?<cardNumber>[*Xx0-9]+)\s+on\s+(?<date>\d{1,2}[-/](?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[-/]\d{2,4}|\d{1,2}[-/]\d{1,2}[-/]\d{2,4})\s+(?:on|at)\s+(?<merchant>(?:null\*)?[A-Za-z0-9*& -]+?)(?:\.|,|\s+Avl\b|$)""",
                 RegexOption.IGNORE_CASE
             )
         ) { m ->
@@ -1017,7 +1108,7 @@ object BankPatternRegistry {
         PatternEntry(
             name = "Rs paid to/spent at/debited for",
             regex = Regex(
-                """(?<currency>USD|EUR|GBP|JPY|AUD|CAD|CHF|SGD|AED|Rs\.?|INR|₹|rs\.?)\s*(?<amount>\d+(?:[.,]\d{3})*(?:\.\d{1,2})?)\s+(?:paid\s+to|spent\s+at|debited\s+for)\s+(?<merchant>[^\n,]+?)(?:\s+on\s+|\s+at\s+)?(?<date>\d{1,2}[/-]\d{1,2}[/-]\d{2,4})?""",
+                """(?<currency>USD|EUR|GBP|JPY|AUD|CAD|CHF|SGD|AED|THB|MYR|BHD|QAR|KWD|OMR|SAR|HKD|CNY|NZD|ZAR|Rs\.?|INR|₹|rs\.?)\s*(?<amount>\d+(?:[.,]\d{3})*(?:\.\d{1,2})?)\s+(?:paid\s+to|spent\s+at|debited\s+for)\s+(?<merchant>[^\n,]+?)(?:\s+on\s+|\s+at\s+)?(?<date>\d{1,2}[/-]\d{1,2}[/-]\d{2,4})?""",
                 RegexOption.IGNORE_CASE
             )
         ) { m ->

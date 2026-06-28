@@ -6,10 +6,14 @@ object ForexService {
 
     private val fallbacks = mapOf(
         "USD" to 83.0, "EUR" to 90.0, "GBP" to 105.0, "JPY" to 0.55,
-        "AUD" to 54.0, "CAD" to 60.0, "CHF" to 94.0, "SGD" to 62.0, "AED" to 22.6
+        "AUD" to 54.0, "CAD" to 60.0, "CHF" to 94.0, "SGD" to 62.0, "AED" to 22.6,
+        "THB" to 2.3, "MYR" to 18.0, "HKD" to 10.7, "BHD" to 220.0,
+        "QAR" to 22.8, "KWD" to 270.0, "OMR" to 216.0, "SAR" to 22.1,
+        "CNY" to 11.5, "NZD" to 50.0, "ZAR" to 4.5
     )
 
-    private val validCodes = setOf("USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "SGD", "AED")
+    private val validCodes = setOf("USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "SGD", "AED",
+        "THB", "MYR", "HKD", "BHD", "QAR", "KWD", "OMR", "SAR", "CNY", "NZD", "ZAR")
 
     fun normalizeCurrencyCode(raw: String?): String {
         if (raw.isNullOrBlank()) return "INR"

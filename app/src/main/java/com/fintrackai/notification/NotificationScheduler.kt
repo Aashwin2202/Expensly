@@ -55,7 +55,7 @@ class NotificationScheduler @Inject constructor(
     }
 
     private fun scheduleDailyReview(policy: ExistingPeriodicWorkPolicy) {
-        val initialDelay = computeDelayTo(targetHour = 21, targetMinute = 0)
+        val initialDelay = computeDelayTo(targetHour = 22, targetMinute = 0)
 
         val request = PeriodicWorkRequestBuilder<DailyReviewWorker>(
             repeatInterval = 24, repeatIntervalTimeUnit = TimeUnit.HOURS
