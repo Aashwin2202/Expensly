@@ -1108,7 +1108,7 @@ def main():
     parser.add_argument(
         "--model", default=DEFAULT_MODEL,
         help=f"Anthropic model to use (default: {DEFAULT_MODEL}). "
-             "Use 'claude-sonnet-4-6' for better quality or 'claude-opus-4-7' for best quality.",
+             "Use 'claude-sonnet-4-6' for better quality or 'claude-opus-4-8' for best quality.",
     )
     parser.add_argument(
         "--limit", type=int, default=None,
