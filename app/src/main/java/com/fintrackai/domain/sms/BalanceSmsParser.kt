@@ -57,7 +57,15 @@ object BalanceSmsParser {
         if (!isBalanceSms(body)) return null
 
         val last4 = ACCOUNT_PATTERN.find(body)?.groupValues?.get(1) ?: return null
-        val amountMatch = AMOUNT_PATTERN.find(body) ?: return null
+
+        // Search for the amount starting at the balance keyword position, not the start of the SMS.
+        // This prevents picking up a preceding transaction amount (e.g. "INR 1,62,897 deposited...Avl bal INR 4,39,822").
+        val lower = body.lowercase()
+        val kwIndex = BALANCE_KEYWORDS.mapNotNull { kw ->
+            val idx = lower.indexOf(kw)
+            if (idx >= 0) idx else null
+        }.minOrNull() ?: 0
+        val amountMatch = AMOUNT_PATTERN.find(body, kwIndex) ?: return null
         val balanceStr = amountMatch.groupValues[1].ifEmpty { amountMatch.groupValues[2] }.ifEmpty { return null }
         val balance = balanceStr.replace(",", "").toDoubleOrNull() ?: return null
 
