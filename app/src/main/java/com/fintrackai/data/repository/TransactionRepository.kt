@@ -58,6 +58,7 @@ class TransactionRepository @Inject constructor(
     private val patternReporter: PatternReporter,
     private val smsPatternDao: SmsPatternDao,
     private val merchantCategorySyncRepo: MerchantCategorySyncRepository,
+    private val patternSyncRepo: PatternSyncRepository,
     private val categoryChangeLogger: CategoryChangeLogger
 ) {
     private val smsImportMutex = Mutex()
@@ -260,7 +261,18 @@ class TransactionRepository @Inject constructor(
         onProgress: ((scanned: Int, total: Int) -> Unit)? = null
     ): Pair<Int, Int> = smsImportMutex.withLock {
         withContext(Dispatchers.IO) {
+            // Sync patterns + merchant categories before patterns are consumed. Launch the (network)
+            // syncs concurrently with the local inbox read so their latency overlaps the read instead
+            // of adding to it. Both are non-fatal on failure and short-circuit when nothing changed.
+            val syncJobs = listOf(
+                async { patternSyncRepo.syncPatterns() },
+                async { merchantCategorySyncRepo.syncMerchantCategories() }
+            )
+
             val messages = readSmsInbox(contentResolver, sinceMillisInclusive)
+
+            // Ensure syncs landed in Room before the reads below load patterns/categories.
+            syncJobs.awaitAll()
 
             // All setup reads are independent — run them in parallel.
             val remoteMerchantCategories: Map<String, String>

@@ -76,6 +76,7 @@ private val BANK_ABBREV_MAP = listOf(
     "au " to "AU",
     "iob" to "IOB",
     "indian overseas" to "IOB",
+    "slice" to "SLC",
 )
 
 private val BANK_LOGO_RES = mapOf(
@@ -96,6 +97,7 @@ private val BANK_LOGO_RES = mapOf(
     "BOI"   to R.drawable.bank_boi,
     "AU"    to R.drawable.bank_au,
     "IOB"   to R.drawable.bank_iob,
+    "SLC"   to R.drawable.bank_slice,
 )
 
 fun formatBalanceDate(isoDate: String): String {

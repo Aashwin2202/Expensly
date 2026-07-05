@@ -31,7 +31,7 @@ object TransactionCategorizer {
                 if (remoteMerchantCategories.isNotEmpty()) {
                     val sortedRemoteMerchantKeys = remoteMerchantCategories.keys.sortedByDescending { it.length }
                     for (key in sortedRemoteMerchantKeys) {
-                        val isMatch = if (key.length <= 3) {
+                        val isMatch = if (key.length <= 4) {
                             Regex("\\b${Regex.escape(key)}\\b", RegexOption.IGNORE_CASE).containsMatchIn(normalized)
                         } else {
                             normalized.contains(key)
@@ -51,7 +51,7 @@ object TransactionCategorizer {
                 if (category == null) {
                     val sortedMerchantKeys = SmsConstants.MERCHANT_CATEGORIES.keys.sortedByDescending { it.length }
                     for (key in sortedMerchantKeys) {
-                        val isMatch = if (key.length <= 3) {
+                        val isMatch = if (key.length <= 4) {
                             Regex("\\b${Regex.escape(key)}\\b", RegexOption.IGNORE_CASE).containsMatchIn(normalized)
                         } else {
                             normalized.contains(key)
@@ -71,7 +71,7 @@ object TransactionCategorizer {
                 if (category == null && remoteWordCategories.isNotEmpty()) {
                     val sortedRemoteWordKeys = remoteWordCategories.keys.sortedByDescending { it.length }
                     for (key in sortedRemoteWordKeys) {
-                        val isMatch = if (key.length <= 3) {
+                        val isMatch = if (key.length <= 4) {
                             Regex("\\b${Regex.escape(key)}\\b", RegexOption.IGNORE_CASE).containsMatchIn(normalized)
                         } else {
                             normalized.contains(key)
@@ -87,7 +87,7 @@ object TransactionCategorizer {
                 if (category == null) {
                     val sortedWordKeys = SmsConstants.WORD_CATEGORIES.keys.sortedByDescending { it.length }
                     for (key in sortedWordKeys) {
-                        val isMatch = if (key.length <= 3) {
+                        val isMatch = if (key.length <= 4) {
                             Regex("\\b${Regex.escape(key)}\\b", RegexOption.IGNORE_CASE).containsMatchIn(normalized)
                         } else {
                             normalized.contains(key)
@@ -176,6 +176,8 @@ object TransactionCategorizer {
         }
         if (extracted.category == "investment") countInStats = false
         if (Regex("""FASTag""", RegexOption.IGNORE_CASE).containsMatchIn(smsBody)) countInStats = false
+        // Prepaid card top-ups (NCMC, wallet loads, etc.) are self-transfers, not income.
+        if (Regex("""prepaid\s*card.*?\bloaded\b""", RegexOption.IGNORE_CASE).containsMatchIn(smsBody)) countInStats = false
 
         // Apply user-saved preference only when SMS rules haven't already excluded this transaction.
         if (countInStats) {

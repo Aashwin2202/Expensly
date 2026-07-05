@@ -17,8 +17,8 @@ android {
         applicationId = "com.fintrackai"
         minSdk = 26
         targetSdk = 35
-        versionCode = 12
-        versionName = "1.0.0"
+        versionCode = 14
+        versionName = "1.0.2"
 
         buildConfigField("String", "GROQ_API_KEY", "\"${project.findProperty("GROQ_API_KEY") ?: ""}\"")
         buildConfigField("String", "SUPABASE_URL", "\"${project.findProperty("SUPABASE_URL") ?: ""}\"")

@@ -47,6 +47,24 @@ object BankPatternRegistry {
     private val hdfcPatterns: List<PatternEntry> = listOf(
 
         PatternEntry(
+            name = "HDFC Payment Successful NetBanking",
+            regex = Regex(
+                """Payment\s+Successful!?\s*$CURRENCY_AMOUNT\s+from\s+A/?[Cc]\.?\s*(?<account>[*Xx0-9]+)\s+to\s+(?<merchant>[A-Za-z0-9][A-Za-z0-9\s&.,'-]*?)\s+via\s+(?<bank>[A-Za-z]+)\s+Bank\s+NetBanking""",
+                RegexOption.IGNORE_CASE
+            )
+        ) { m ->
+            ExtractedTransaction(
+                type = "debit",
+                amount = parseAmount(m.groups["amount"]?.value),
+                currency = TransactionExtractor.normalizeCurrencyCode(m.groups["currency"]?.value),
+                date = extractDate(text),
+                fullAccount = m.groups["account"]?.value?.trim(),
+                merchant = TransactionExtractor.cleanMerchantName(m.groups["merchant"]?.value?.trim()),
+                reference = reference
+            )
+        },
+
+        PatternEntry(
             name = "HDFC deposited",
             regex = Regex(
                 """(?:Update!?\s*)?$CURRENCY_AMOUNT\s+deposited\s+in\s+.*?(?:a/?c\.?\s*)?(?<account>[*Xx0-9]+)\s+on\s+(?<date>\d{1,2}[-/]\w{3}[-/]\d{2,4}|\d{1,2}[-/]\d{1,2}[-/]\d{2,4})\s+for\s+(?<description>[^.]+?)(?:\.(?:Avl|$)|$)""",

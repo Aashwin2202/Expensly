@@ -36,6 +36,7 @@ fun SettingsScreen(
     onLogout: () -> Unit,
     onNavigateToUndetectedSms: () -> Unit = {},
     onNavigateToWeeklySummary: () -> Unit = {},
+    onNavigateToWrapped: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -289,6 +290,14 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Manage Categories")
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = onNavigateToWrapped,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("View Expenses Wrapped")
             }
 
             Spacer(modifier = Modifier.height(8.dp))

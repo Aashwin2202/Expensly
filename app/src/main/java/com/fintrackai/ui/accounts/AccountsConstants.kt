@@ -40,6 +40,8 @@ object AccountsConstants {
         "AU"    to (0xFFB71C1CL to 0xFFE53935L),
         // Indian Overseas Bank — deep teal-green
         "IOB"   to (0xFF004D40L to 0xFF00897BL),
+        // Slice — deep violet-purple
+        "SLC"   to (0xFF3D1560L to 0xFF7C3AEDL),
     )
 
     /** Fallback gradient palette when no bank match found. */

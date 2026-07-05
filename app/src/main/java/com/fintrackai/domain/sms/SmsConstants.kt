@@ -27,18 +27,28 @@ object SmsConstants {
     val PROMOTIONAL_PATTERNS = listOf(
         // "Earn N / NX points" — rewards offer
         Regex("""\bearn\b.{0,40}\bpoints?\b""", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)),
-        // "T&C" or "T&C-" — terms & conditions footnote, absent from real alerts
-        Regex("""\bT&C\b""", RegexOption.IGNORE_CASE),
+        // "T&C" / "T&C-" / "TnC" — terms & conditions footnote, absent from real alerts
+        Regex("""\bT&?nC\b|\bT&C\b""", RegexOption.IGNORE_CASE),
         // "Offer valid till / valid from" — promotional validity window
         Regex("""\boffer\s+valid\b""", RegexOption.IGNORE_CASE),
-        // "cashback on transactions" / "get cashback" — cashback promo, not a credit alert
-        Regex("""\bget\s+(?:\d+%\s+)?cashback\b""", RegexOption.IGNORE_CASE),
+        // "cashback on transactions" / "get cashback" / "Get Rs. 500 Cashback" — cashback promo, not a credit alert
+        Regex("""\bget\s+(?:\d+%\s+|(?:Rs\.?|INR|₹)\s*[\d,]+(?:\.\d{2})?\s+)?cashback\b""", RegexOption.IGNORE_CASE),
     )
 
     val FAILED_TRANSACTION_KEYWORDS = listOf(
         "declined", "failed", "not successful", "unsuccessful", "could not be processed",
         "transaction failed", "payment failed", "payment declined", "insufficient funds",
         "insufficient balance", "transaction unsuccessful", "could not complete"
+    )
+
+    // Transaction was reversed by the merchant/bank after the fact — e.g.
+    // "Trxn of Rs.2.00 ... has been cancelled and refunded by the merchant".
+    // Distinct from FAILED_TRANSACTION_KEYWORDS since the charge did go through
+    // before being reversed, but it should still be excluded as a net-zero event.
+    val REVERSED_TRANSACTION_PATTERNS = listOf(
+        Regex("""cancelled\s+and\s+refunded""", RegexOption.IGNORE_CASE),
+        Regex("""(?:has\s+been\s+)?refunded\s+by\s+the\s+merchant""", RegexOption.IGNORE_CASE),
+        Regex("""transaction\s+(?:has\s+been\s+)?(?:cancelled|reversed)""", RegexOption.IGNORE_CASE),
     )
 
     // Patterns that indicate a future/pending transaction, not a completed one.
@@ -90,6 +100,11 @@ object SmsConstants {
         Regex("""converted\s+to\s+emi""", RegexOption.IGNORE_CASE),
         Regex("""amort(?:ization)?\s+schedule""", RegexOption.IGNORE_CASE),
         Regex("""emi\s+amt\s+is\s+exclusive""", RegexOption.IGNORE_CASE),
+        // EMI-conversion upsell offers, e.g. "convert spends worth Rs. 2500 or above into EMIs"
+        // (SBI Flexipay and similar bank features) — promotional, not an actual transaction.
+        Regex("""spends?\s+worth\s+(?:Rs\.?|INR|₹|rs\.?)\s*\d+(?:[.,]\d{2,3})*(?:\.\d{1,2})?\s+(?:or\s+above\s+)?into\s+emis?""", RegexOption.IGNORE_CASE),
+        Regex("""convert\s+(?:your\s+)?spends?\s+.*?into\s+emis?""", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)),
+        Regex("""\bflexipay\b""", RegexOption.IGNORE_CASE),
     )
 
     val CREDIT_CARD_STATEMENT_PATTERNS = listOf(

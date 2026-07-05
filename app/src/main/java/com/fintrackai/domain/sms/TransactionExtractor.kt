@@ -619,6 +619,27 @@ object TransactionExtractor {
         return if (last4 != null) "$label ($last4)" else label
     }
 
+    // A dynamic pattern paired with its resolved bank (from senderId). Both the sort order and the
+    // bank resolution are message-independent, so we compute them once per pattern list.
+    private data class PreparedPattern(val pattern: SmsPatternEntity, val bank: String?)
+
+    // Single-entry memo keyed by the pattern-list instance. A whole scan reuses one list instance,
+    // so this turns a per-message sort + per-pattern bank lookup into a one-time cost per scan.
+    // @Volatile + local snapshot makes concurrent reads (CONCURRENCY workers) safe without locking:
+    // a lost race just recomputes, never returns a mismatched result.
+    @Volatile
+    private var preparedCache: Pair<List<SmsPatternEntity>, List<PreparedPattern>>? = null
+
+    private fun prepareDynamicPatterns(dynamicPatterns: List<SmsPatternEntity>): List<PreparedPattern> {
+        val cached = preparedCache
+        if (cached != null && cached.first === dynamicPatterns) return cached.second
+        val prepared = dynamicPatterns
+            .sortedWith(compareBy({ it.priority }, { if (it.senderId != null) 0 else 1 }))
+            .map { PreparedPattern(it, it.senderId?.let { id -> BankSenderDetector.detect(id) }) }
+        preparedCache = dynamicPatterns to prepared
+        return prepared
+    }
+
     private fun extractTransactionDataInternal(
         sms: String,
         dynamicPatterns: List<SmsPatternEntity> = emptyList(),
@@ -673,15 +694,13 @@ object TransactionExtractor {
         // Dynamic patterns from Supabase (tried before hardcoded patterns)
         // Within the same priority, bank-specific patterns (sender_id set) are tried before
         // generic ones (sender_id null) so a precise bank pattern wins over a broad fallback.
+        // The sort order and each pattern's resolved bank depend only on the pattern list, not the
+        // message, so prepare them once per list (see prepareDynamicPatterns) and reuse across messages.
         val detectedBankForDynamic = senderAddress?.let { BankSenderDetector.detect(it) }
             ?: extractBankName(text, senderAddress = null)
-        val orderedDynamic = dynamicPatterns.sortedWith(
-            compareBy({ it.priority }, { if (it.senderId != null) 0 else 1 })
-        )
-        for (dp in orderedDynamic) {
-            val patternBank = dp.senderId?.let { BankSenderDetector.detect(it) }
-            if (patternBank != null && patternBank != detectedBankForDynamic) continue
-            val result = DynamicPatternEngine.tryMatch(dp, text, detectedBankForDynamic)
+        for (dp in prepareDynamicPatterns(dynamicPatterns)) {
+            if (dp.bank != null && dp.bank != detectedBankForDynamic) continue
+            val result = DynamicPatternEngine.tryMatch(dp.pattern, text, detectedBankForDynamic)
             if (result != null && result.amount != null && result.amount > 0) {
                 return result.copy(
                     date = result.date ?: extractDate(text),

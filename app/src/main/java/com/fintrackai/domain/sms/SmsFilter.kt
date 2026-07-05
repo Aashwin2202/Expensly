@@ -14,6 +14,7 @@ object SmsFilter {
             // Must contain a transaction keyword before running any remaining regex.
             if (!SmsConstants.TRANSACTION_KEYWORD_PATTERNS.any { it.containsMatchIn(sms.body) }) return@filter false
             // Regex exclusion checks — only reached for sender-allowed, transaction-containing messages.
+            if (SmsConstants.REVERSED_TRANSACTION_PATTERNS.any { it.containsMatchIn(sms.body) }) return@filter false
             if (SmsConstants.EMI_CONVERSION_PATTERNS.any { it.containsMatchIn(sms.body) }) return@filter false
             if (SmsConstants.CREDIT_CARD_STATEMENT_PATTERNS.any { it.containsMatchIn(sms.body) }) return@filter false
             if (SmsConstants.PENDING_TRANSACTION_PATTERNS.any { it.containsMatchIn(sms.body) }) return@filter false

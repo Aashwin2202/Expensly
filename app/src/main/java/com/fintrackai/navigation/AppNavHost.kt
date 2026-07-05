@@ -339,8 +339,10 @@ fun AppNavHost(notifDestination: String? = null) {
         composable(Screen.ExpenseWrapped.route) {
             WrappedScreen(
                 onClose = {
-                    navController.navigate(Screen.Home.route) {
-                        popUpTo(Screen.ExpenseWrapped.route) { inclusive = true }
+                    if (!navController.popBackStack()) {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.ExpenseWrapped.route) { inclusive = true }
+                        }
                     }
                 }
             )
@@ -464,6 +466,9 @@ fun AppNavHost(notifDestination: String? = null) {
                     },
                     onNavigateToWeeklySummary = {
                         navController.navigate(Screen.WeeklySummary.createRoute())
+                    },
+                    onNavigateToWrapped = {
+                        navController.navigate(Screen.ExpenseWrapped.route)
                     }
                 )
             }
@@ -487,7 +492,7 @@ fun AppNavHost(notifDestination: String? = null) {
             )
         ) { backStackEntry ->
             val senderId = backStackEntry.arguments?.getString("senderId").orEmpty()
-            val undetectedBackStackEntry = remember { navController.getBackStackEntry(Screen.UndetectedSms.route) }
+            val undetectedBackStackEntry = remember(backStackEntry) { navController.getBackStackEntry(Screen.UndetectedSms.route) }
             val undetectedVm: UndetectedSmsViewModel = hiltViewModel(undetectedBackStackEntry)
             SenderMessagesScreen(
                 senderId = senderId,
@@ -613,7 +618,7 @@ fun AppNavHost(notifDestination: String? = null) {
                     }
                 )
             } else {
-                val homeBackStackEntry = remember { navController.getBackStackEntry(Screen.Home.route) }
+                val homeBackStackEntry = remember(backStackEntry) { navController.getBackStackEntry(Screen.Home.route) }
                 val homeViewModel: HomeViewModel = hiltViewModel(homeBackStackEntry)
                 val homeState by homeViewModel.uiState.collectAsState()
                 AllRemindersScreen(
