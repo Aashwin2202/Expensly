@@ -1,4 +1,4 @@
-# Expensly (FinTrackAI)
+# Expensly
 
 An Android app that automatically tracks expenses by reading bank and credit card transaction SMS messages — no manual entry required.
 
