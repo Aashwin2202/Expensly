@@ -56,3 +56,5 @@ venv/
 
 # OS
 .DS_Store
+
+gradle.properties
