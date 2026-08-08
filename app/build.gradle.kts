@@ -11,14 +11,14 @@ plugins {
 
 android {
     namespace = "com.fintrackai"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.fintrackai"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 14
-        versionName = "1.0.2"
+        targetSdk = 36
+        versionCode = 15
+        versionName = "1.0.3"
 
         buildConfigField("String", "GROQ_API_KEY", "\"${project.findProperty("GROQ_API_KEY") ?: ""}\"")
         buildConfigField("String", "SUPABASE_URL", "\"${project.findProperty("SUPABASE_URL") ?: ""}\"")
